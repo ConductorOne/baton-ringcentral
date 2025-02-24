@@ -18,6 +18,7 @@ type Connector struct {
 func (d *Connector) ResourceSyncers(_ context.Context) []connectorbuilder.ResourceSyncer {
 	return []connectorbuilder.ResourceSyncer{
 		newUserBuilder(d.client),
+		newRoleBuilder(d.client),
 	}
 }
 

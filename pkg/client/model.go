@@ -1,5 +1,26 @@
 package client
 
+// Generic structures -->
+
+type Paging struct {
+	Page       int `json:"page,omitempty"`
+	TotalPages int `json:"totalPages,omitempty"`
+	PageEnd    int `json:"pageEnd,omitempty"`
+}
+
+type Navigation struct {
+	FirstPage NavPage `json:"firstPage,omitempty"`
+	LastPage  NavPage `json:"lastPage,omitempty"`
+}
+
+type NavPage struct {
+	Uri string `json:"uri,omitempty"`
+}
+
+// <-- Generic structures
+
+// Extension Response Structures -->
+
 type ExtensionResponse struct {
 	Uri        string      `json:"uri,omitempty"`
 	Records    []Extension `json:"records,omitempty"`
@@ -21,17 +42,27 @@ type ExtensionContact struct {
 	Email     string `json:"email,omitempty"`
 }
 
-type Paging struct {
-	Page       int `json:"page,omitempty"`
-	TotalPages int `json:"totalPages,omitempty"`
-	PageEnd    int `json:"pageEnd,omitempty"`
+// <-- Extension Response Structures
+
+// Role Response Structures -->
+
+type RoleResponse struct {
+	Uri        string     `json:"uri,omitempty"`
+	Records    []Role     `json:"records,omitempty"`
+	Paging     Paging     `json:"paging,omitempty"`
+	Navigation Navigation `json:"navigation,omitempty"`
 }
 
-type Navigation struct {
-	FirstPage NavPage `json:"firstPage,omitempty"`
-	LastPage  NavPage `json:"lastPage,omitempty"`
+type Role struct {
+	Uri            string `json:"uri,omitempty"`
+	Id             string `json:"id,omitempty"`
+	DisplayName    string `json:"displayName,omitempty"`
+	Description    string `json:"description,omitempty"`
+	Custom         bool   `json:"custom,omitempty"`
+	Scope          string `json:"scope,omitempty"`
+	Hidden         bool   `json:"hidden,omitempty"`
+	SiteCompatible bool   `json:"siteCompatible,omitempty"`
+	//Permissions    []interface{} `json:"permissions,omitempty"`
 }
 
-type NavPage struct {
-	Uri string `json:"uri,omitempty"`
-}
+// <-- Role Response Structures

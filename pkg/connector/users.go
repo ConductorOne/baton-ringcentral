@@ -103,7 +103,6 @@ func parseIntoUserResource(extension client.Extension) (*v2.Resource, error) {
 		userResourceType,
 		extension.ID,
 		userTraits,
-		//rs.WithParentResourceID(parentResourceID),
 	)
 	if err != nil {
 		return nil, err
