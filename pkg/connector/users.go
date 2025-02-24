@@ -4,12 +4,12 @@ import (
 	"context"
 	"fmt"
 	"github.com/conductorone/baton-ringcentral/pkg/client"
-	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
-
 	v2 "github.com/conductorone/baton-sdk/pb/c1/connector/v2"
 	"github.com/conductorone/baton-sdk/pkg/annotations"
 	"github.com/conductorone/baton-sdk/pkg/pagination"
+	"github.com/conductorone/baton-sdk/pkg/types/grant"
 	rs "github.com/conductorone/baton-sdk/pkg/types/resource"
+	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
 )
 
 type userBuilder struct {
@@ -70,8 +70,26 @@ func (b *userBuilder) Entitlements(_ context.Context, _ *v2.Resource, _ *paginat
 }
 
 // Grants always returns an empty slice for users since they don't have any entitlements.
-func (b *userBuilder) Grants(_ context.Context, _ *v2.Resource, _ *pagination.Token) ([]*v2.Grant, string, annotations.Annotations, error) {
-	return nil, "", nil, nil
+// In this case, Grants will create the Role Grants, since the Roles assigned are an internal data of each user that should be requested using the User ID.
+func (b *userBuilder) Grants(ctx context.Context, userResource *v2.Resource, _ *pagination.Token) ([]*v2.Grant, string, annotations.Annotations, error) {
+	var roleGrants []*v2.Grant
+
+	userRoles, err := b.client.GetUserAssignedRoles(ctx, userResource)
+	if err != nil {
+		return nil, "", nil, err
+	}
+
+	for _, userRole := range userRoles {
+		roleResource := &v2.Resource{
+			Id: &v2.ResourceId{
+				ResourceType: roleResourceType.Id,
+				Resource:     userRole.Id,
+			},
+		}
+		roleGrants = append(roleGrants, grant.NewGrant(roleResource, rolePermissionName, userResource))
+	}
+
+	return roleGrants, "", nil, nil
 }
 
 // parseIntoUserResource - This function parses an Extension (users from RingCentral) into a User Resource.

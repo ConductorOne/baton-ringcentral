@@ -3,6 +3,8 @@ package client
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	v2 "github.com/conductorone/baton-sdk/pb/c1/connector/v2"
 	"github.com/conductorone/baton-sdk/pkg/uhttp"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
 	"io"
@@ -14,6 +16,7 @@ const (
 	urlBase           = "https://platform.ringcentral.com/restapi/v1.0"
 	getExtensions     = "/account/~/extension"
 	getAvailableRoles = "/account/~/user-role"
+	getUserRoles      = "/account/~/extension/%s/assigned-role"
 )
 
 type RingCentralClient struct {
@@ -140,6 +143,21 @@ func (c *RingCentralClient) ListAllAvailableRoles(ctx context.Context, pageOps P
 	}
 
 	return response.Records, nextPage, nil
+}
+
+func (c *RingCentralClient) GetUserAssignedRoles(ctx context.Context, userResource *v2.Resource) ([]UserRole, error) {
+	var res UserRoleResponse
+	queryUrl, err := url.JoinPath(urlBase, fmt.Sprintf(getUserRoles, userResource.Id.Resource))
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = c.doRequest(ctx, http.MethodGet, queryUrl, &res)
+	if err != nil {
+		return nil, err
+	}
+
+	return res.Records, nil
 }
 
 func (c *RingCentralClient) getExtensionsListFromAPI(

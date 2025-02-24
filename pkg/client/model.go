@@ -66,3 +66,18 @@ type Role struct {
 }
 
 // <-- Role Response Structures
+
+// Role Per User Response Structures -->
+
+type UserRoleResponse struct {
+	Records []UserRole `json:"records,omitempty"`
+}
+
+type UserRole struct {
+	Id             string `json:"id,omitempty"`
+	AutoAssigned   bool   `json:"autoAssigned,omitempty"`
+	SiteRestricted bool   `json:"siteRestricted,omitempty"`
+	SiteCompatible bool   `json:"siteCompatible,omitempty"`
+}
+
+// <-- Role Per User Response Structures
