@@ -5,15 +5,16 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	v2 "github.com/conductorone/baton-sdk/pb/c1/connector/v2"
-	"github.com/conductorone/baton-sdk/pkg/uhttp"
-	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
 	"io"
 	"log"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
+
+	v2 "github.com/conductorone/baton-sdk/pb/c1/connector/v2"
+	"github.com/conductorone/baton-sdk/pkg/uhttp"
+	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
 )
 
 const (
@@ -86,17 +87,17 @@ func New(ctx context.Context, opts ...Option) (*RingCentralClient, error) {
 	}
 
 	if rcClient.Config.ClientID != "" && rcClient.Config.ClientSecret != "" && rcClient.Config.JWT != "" {
-		newAccessToken, err := rcClient.requestAccessToken()
+		newAccessToken, err := rcClient.requestAccessToken(ctx)
 		if err != nil {
 			return nil, err
 		}
 		rcClient.accessToken = newAccessToken
 	}
-	
+
 	return &rcClient, nil
 }
 
-func (c *RingCentralClient) requestAccessToken() (string, error) {
+func (c *RingCentralClient) requestAccessToken(ctx context.Context) (string, error) {
 	requestURL, err := url.JoinPath(urlBase, oauthURL)
 	if err != nil {
 		return "", err
@@ -109,7 +110,7 @@ func (c *RingCentralClient) requestAccessToken() (string, error) {
 	form.Add("grant_type", "urn:ietf:params:oauth:grant-type:jwt-bearer")
 	form.Add("assertion", c.Config.JWT)
 
-	req, err := http.NewRequest("POST", requestURL, strings.NewReader(form.Encode()))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, requestURL, strings.NewReader(form.Encode()))
 	if err != nil {
 		return "", err
 	}
@@ -171,6 +172,7 @@ func (c *RingCentralClient) doRequest(
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
 
 	if res != nil {
 		bodyContent, err := io.ReadAll(resp.Body)
@@ -301,7 +303,6 @@ func (c *RingCentralClient) UpdateUserRoles(ctx context.Context, userResource *v
 				// While granting: If the current role ID equals the role should be added, an error is thrown, since the user already has that role.
 				return fmt.Errorf("the role with ID: '%s' is already assigned to the user with ID: '%s'", roleID, userResource.Id.Resource)
 			}
-
 		}
 
 		roleIDs = append(roleIDs, IdKeyValue{Id: arID})

@@ -3,12 +3,13 @@ package connector
 import (
 	"context"
 	"fmt"
+	"os"
+	"testing"
+
 	"github.com/conductorone/baton-ringcentral/pkg/client"
 	v2 "github.com/conductorone/baton-sdk/pb/c1/connector/v2"
 	"github.com/conductorone/baton-sdk/pkg/pagination"
 	"github.com/stretchr/testify/assert"
-	"os"
-	"testing"
 )
 
 var (

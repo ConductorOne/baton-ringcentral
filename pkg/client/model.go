@@ -9,7 +9,7 @@ type TokenResponse struct {
 // Generic structures -->
 
 type BasicResponse struct {
-	Uri        string     `json:"uri,omitempty"`
+	URI        string     `json:"uri,omitempty"`
 	Paging     Paging     `json:"paging,omitempty"`
 	Navigation Navigation `json:"navigation,omitempty"`
 }
@@ -26,7 +26,7 @@ type Navigation struct {
 }
 
 type NavPage struct {
-	Uri string `json:"uri,omitempty"`
+	URI string `json:"uri,omitempty"`
 }
 
 // <-- Generic structures
@@ -62,7 +62,7 @@ type RoleResponse struct {
 }
 
 type Role struct {
-	Uri            string `json:"uri,omitempty"`
+	URI            string `json:"uri,omitempty"`
 	Id             string `json:"id,omitempty"`
 	DisplayName    string `json:"displayName,omitempty"`
 	Description    string `json:"description,omitempty"`
