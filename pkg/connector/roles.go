@@ -27,7 +27,7 @@ func (b *roleBuilder) ResourceType(_ context.Context) *v2.ResourceType {
 func (b *roleBuilder) List(ctx context.Context, _ *v2.ResourceId, pToken *pagination.Token) ([]*v2.Resource, string, annotations.Annotations, error) {
 	var roleResources []*v2.Resource
 
-	_, pageToken, err := getToken(pToken, userResourceType)
+	bag, pageToken, err := getToken(pToken, userResourceType)
 	if err != nil {
 		return nil, "", nil, err
 	}
@@ -36,6 +36,11 @@ func (b *roleBuilder) List(ctx context.Context, _ *v2.ResourceId, pToken *pagina
 		Page:    pageToken,
 		PerPage: pToken.Size,
 	})
+	if err != nil {
+		return nil, "", nil, err
+	}
+
+	err = bag.Next(nextPageToken)
 	if err != nil {
 		return nil, "", nil, err
 	}
@@ -49,10 +54,10 @@ func (b *roleBuilder) List(ctx context.Context, _ *v2.ResourceId, pToken *pagina
 		roleResources = append(roleResources, roleResource)
 	}
 
-	//err = bag.Next(nextPageToken)
-	//if err != nil {
-	//	return nil, "", nil, err
-	//}
+	nextPageToken, err = bag.Marshal()
+	if err != nil {
+		return nil, "", nil, err
+	}
 
 	return roleResources, nextPageToken, nil, nil
 }
@@ -98,7 +103,7 @@ func (b *roleBuilder) Grant(ctx context.Context, principal *v2.Resource, entitle
 
 func (b *roleBuilder) Revoke(ctx context.Context, grant *v2.Grant) (annotations.Annotations, error) {
 	roleID := grant.Entitlement.Resource.Id.Resource
-	
+
 	err := b.client.UpdateUserRoles(ctx, grant.Principal, roleID, true)
 	if err != nil {
 		return nil, err

@@ -10,6 +10,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 )
 
 const (
@@ -117,8 +118,8 @@ func (c *RingCentralClient) doRequest(
 // Users withing the platform are named as 'Extension'.
 func (c *RingCentralClient) ListAllUsers(ctx context.Context, pageOps PageOptions) ([]Extension, string, error) {
 	var response ExtensionResponse
-	queryUrl, err := url.JoinPath(urlBase, getExtensions)
 
+	queryUrl, err := url.JoinPath(urlBase, getExtensions)
 	if err != nil {
 		return nil, "", err
 	}
@@ -175,12 +176,10 @@ func (c *RingCentralClient) getExtensionsListFromAPI(
 		return "", err
 	}
 
-	// TODO implement proper pagination for this API
-	nav := res.Navigation
-	if res.Uri == nav.LastPage.Uri {
-		pageToken = ""
+	if res.Paging.Page < res.Paging.TotalPages {
+		pageToken = strconv.Itoa(res.Paging.Page + 1)
 	}
-
+	
 	return pageToken, nil
 }
 
@@ -192,10 +191,8 @@ func (c *RingCentralClient) getRolesListFromAPI(ctx context.Context, urlAddress 
 		return "", err
 	}
 
-	// TODO implement proper pagination for this API
-	nav := res.Navigation
-	if res.Uri == nav.LastPage.Uri {
-		pageToken = ""
+	if res.Paging.Page < res.Paging.TotalPages {
+		pageToken = strconv.Itoa(res.Paging.Page + 1)
 	}
 
 	return pageToken, nil

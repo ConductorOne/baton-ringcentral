@@ -2,14 +2,12 @@ package connector
 
 import (
 	"context"
-	"fmt"
 	"github.com/conductorone/baton-ringcentral/pkg/client"
 	v2 "github.com/conductorone/baton-sdk/pb/c1/connector/v2"
 	"github.com/conductorone/baton-sdk/pkg/annotations"
 	"github.com/conductorone/baton-sdk/pkg/pagination"
 	"github.com/conductorone/baton-sdk/pkg/types/grant"
 	rs "github.com/conductorone/baton-sdk/pkg/types/resource"
-	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
 )
 
 type userBuilder struct {
@@ -24,25 +22,23 @@ func (b *userBuilder) ResourceType(ctx context.Context) *v2.ResourceType {
 // List returns all the users from the database as resource objects.
 // Users include a UserTrait because they are the 'shape' of a standard user.
 func (b *userBuilder) List(ctx context.Context, _ *v2.ResourceId, pToken *pagination.Token) ([]*v2.Resource, string, annotations.Annotations, error) {
-	logger := ctxzap.Extract(ctx)
-	var message string
-
 	var userResources []*v2.Resource
 
-	_, pageToken, err := getToken(pToken, userResourceType)
+	bag, pageToken, err := getToken(pToken, userResourceType)
 	if err != nil {
 		return nil, "", nil, err
 	}
 
-	message = fmt.Sprintf("- ---------------- PAGE TOKEN: %v", pageToken)
-	logger.Info(message)
 	users, nextPageToken, err := b.client.ListAllUsers(ctx, client.PageOptions{
 		Page:    pageToken,
 		PerPage: pToken.Size,
 	})
 
-	logger.Info(fmt.Sprintf("__ NEXT PAGE: %v", nextPageToken))
+	if err != nil {
+		return nil, "", nil, err
+	}
 
+	err = bag.Next(nextPageToken)
 	if err != nil {
 		return nil, "", nil, err
 	}
@@ -56,7 +52,7 @@ func (b *userBuilder) List(ctx context.Context, _ *v2.ResourceId, pToken *pagina
 		userResources = append(userResources, userResource)
 	}
 
-	//err = bag.Next(nextPageToken)
+	nextPageToken, err = bag.Marshal()
 	if err != nil {
 		return nil, "", nil, err
 	}
