@@ -92,7 +92,6 @@ func (b *roleBuilder) Grant(ctx context.Context, principal *v2.Resource, entitle
 	}
 
 	roleID := entitlement.Resource.Id.Resource
-	//err := b.client.AddRoleToUser(ctx, principal, roleID)
 	err := b.client.UpdateUserRoles(ctx, principal, roleID, false)
 	if err != nil {
 		return nil, err

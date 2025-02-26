@@ -10,8 +10,6 @@ import (
 
 const ItemsPerPage = 100
 
-// PageOptions is options for list method of paginatable resources.
-// It's used to create query string.
 type PageOptions struct {
 	PerPage int `url:"limit,omitempty"`
 	Page    int `url:"page,omitempty"`

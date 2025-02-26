@@ -1,5 +1,11 @@
 package client
 
+type TokenResponse struct {
+	AccessToken string `json:"access_token"`
+	TokenType   string `json:"token_type"`
+	ExpiresIn   int    `json:"expires_in"`
+}
+
 // Generic structures -->
 
 type Paging struct {
@@ -62,7 +68,6 @@ type Role struct {
 	Scope          string `json:"scope,omitempty"`
 	Hidden         bool   `json:"hidden,omitempty"`
 	SiteCompatible bool   `json:"siteCompatible,omitempty"`
-	//Permissions    []interface{} `json:"permissions,omitempty"`
 }
 
 // <-- Role Response Structures

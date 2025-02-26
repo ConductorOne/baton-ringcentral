@@ -43,24 +43,31 @@ func main() {
 }
 
 func getConnector(ctx context.Context, v *viper.Viper) (types.ConnectorServer, error) {
-	// Obtain the arguments from Viper
-	accessToken := v.GetString(accessToken)
+	// Get the arguments from Viper
+	rcClientID := v.GetString(ringCentralClientID)
+	rcClientSecret := v.GetString(ringCentralClientSecret)
+	rcJWT := v.GetString(ringCentralJWT)
 
 	l := ctxzap.Extract(ctx)
 	if err := ValidateConfig(v); err != nil {
 		return nil, err
 	}
 
-	cb, err := connector.New(ctx, accessToken)
+	cb, err := connector.New(
+		ctx,
+		rcClientID,
+		rcClientSecret,
+		rcJWT,
+	)
 	if err != nil {
 		l.Error("error creating connector", zap.Error(err))
 		return nil, err
 	}
-	
-	connector, err := connectorbuilder.NewConnector(ctx, cb)
+
+	con, err := connectorbuilder.NewConnector(ctx, cb)
 	if err != nil {
 		l.Error("error creating connector", zap.Error(err))
 		return nil, err
 	}
-	return connector, nil
+	return con, nil
 }

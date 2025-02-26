@@ -5,16 +5,26 @@ import (
 	"github.com/spf13/viper"
 )
 
-const accessToken = "access-token"
+const (
+	//accessToken             = "access-token"
+	ringCentralClientID     = "ringcentral-client-id"
+	ringCentralClientSecret = "ringcentral-client-secret"
+	ringCentralJWT          = "ringcentral-jwt"
+)
 
 var (
-	accessTokenField = field.StringField(accessToken, field.WithRequired(true), field.WithDescription("Access Key to authenticate with RingCentral API"))
+	//accessTokenField = field.StringField(accessToken, field.WithRequired(true), field.WithDescription("Access Key to authenticate with RingCentral API"))
+	rcClientIDField     = field.StringField(ringCentralClientID, field.WithRequired(true), field.WithDescription("Client ID of the Baton App for RingCentral"))
+	rcClientSecretField = field.StringField(ringCentralClientSecret, field.WithRequired(true), field.WithDescription("Client Secret of the Baton App for RingCentral"))
+	rcJWTField          = field.StringField(ringCentralJWT, field.WithRequired(true), field.WithDescription("JWT of the admin user on RingCentral platform"))
 
 	// ConfigurationFields defines the external configuration required for the
 	// connector to run. Note: these fields can be marked as optional or
 	// required.
 	ConfigurationFields = []field.SchemaField{
-		accessTokenField,
+		rcClientIDField,
+		rcClientSecretField,
+		rcJWTField,
 	}
 
 	// FieldRelationships defines relationships between the fields listed in

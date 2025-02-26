@@ -2,39 +2,68 @@ package client
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	v2 "github.com/conductorone/baton-sdk/pb/c1/connector/v2"
 	"github.com/conductorone/baton-sdk/pkg/uhttp"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 )
 
 const (
-	urlBase           = "https://platform.ringcentral.com/restapi/v1.0"
-	getExtensions     = "/account/~/extension"
-	getAvailableRoles = "/account/~/user-role"
-	userRoles         = "/account/~/extension/%s/assigned-role"
+	urlBase           = "https://platform.ringcentral.com/restapi"
+	oauthURL          = "/oauth/token"
+	getExtensions     = "/v1.0/account/~/extension"
+	getAvailableRoles = "/v1.0/account/~/user-role"
+	userRoles         = "/v1.0/account/~/extension/%s/assigned-role"
 )
 
 type RingCentralClient struct {
 	client      *uhttp.BaseHttpClient
 	accessToken string
+	Config      ClientConfig
+}
+
+type ClientConfig struct {
+	ClientID     string
+	ClientSecret string
+	JWT          string
 }
 
 type Option func(c *RingCentralClient)
-
-func (c *RingCentralClient) GetToken() string {
-	return c.accessToken
-}
 
 func WithAccessToken(accessToken string) Option {
 	return func(c *RingCentralClient) {
 		c.accessToken = accessToken
 	}
+}
+
+func WithClientID(clientID string) Option {
+	return func(c *RingCentralClient) {
+		c.Config.ClientID = clientID
+	}
+}
+
+func WithClientSecret(clientSecret string) Option {
+	return func(c *RingCentralClient) {
+		c.Config.ClientSecret = clientSecret
+	}
+}
+
+func WithJWT(jwt string) Option {
+	return func(c *RingCentralClient) {
+		c.Config.JWT = jwt
+	}
+}
+
+func (c *RingCentralClient) GetToken() string {
+	return c.accessToken
 }
 
 func New(ctx context.Context, opts ...Option) (*RingCentralClient, error) {
@@ -56,7 +85,49 @@ func New(ctx context.Context, opts ...Option) (*RingCentralClient, error) {
 		o(&rcClient)
 	}
 
+	newAccessToken, err := rcClient.requestAccessToken()
+	if err != nil {
+		return nil, err
+	}
+	rcClient.accessToken = newAccessToken
+
 	return &rcClient, nil
+}
+
+func (c *RingCentralClient) requestAccessToken() (string, error) {
+	requestURL, err := url.JoinPath(urlBase, oauthURL)
+	if err != nil {
+		return "", err
+	}
+
+	clientData := c.Config.ClientID + ":" + c.Config.ClientSecret
+	encodedClientData := base64.StdEncoding.EncodeToString([]byte(clientData))
+
+	form := url.Values{}
+	form.Add("grant_type", "urn:ietf:params:oauth:grant-type:jwt-bearer")
+	form.Add("assertion", c.Config.JWT)
+
+	req, err := http.NewRequest("POST", requestURL, strings.NewReader(form.Encode()))
+	if err != nil {
+		return "", err
+	}
+
+	req.Header.Add("Authorization", "Basic "+encodedClientData)
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		log.Fatalf("Error haciendo la solicitud: %v", err)
+	}
+	defer resp.Body.Close()
+
+	var tokenResponse TokenResponse
+	err = json.NewDecoder(resp.Body).Decode(&tokenResponse)
+	if err != nil {
+		return "", err
+	}
+
+	return tokenResponse.AccessToken, nil
 }
 
 func (c *RingCentralClient) doRequest(
@@ -179,7 +250,7 @@ func (c *RingCentralClient) getExtensionsListFromAPI(
 	if res.Paging.Page < res.Paging.TotalPages {
 		pageToken = strconv.Itoa(res.Paging.Page + 1)
 	}
-	
+
 	return pageToken, nil
 }
 
