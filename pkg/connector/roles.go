@@ -2,12 +2,15 @@ package connector
 
 import (
 	"context"
+	"fmt"
 	"github.com/conductorone/baton-ringcentral/pkg/client"
 	v2 "github.com/conductorone/baton-sdk/pb/c1/connector/v2"
 	"github.com/conductorone/baton-sdk/pkg/annotations"
 	"github.com/conductorone/baton-sdk/pkg/pagination"
 	"github.com/conductorone/baton-sdk/pkg/types/entitlement"
 	rs "github.com/conductorone/baton-sdk/pkg/types/resource"
+	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
+	"go.uber.org/zap"
 )
 
 const rolePermissionName = "assigned"
@@ -72,6 +75,27 @@ func (b *roleBuilder) Entitlements(ctx context.Context, resource *v2.Resource, p
 // This was made like this since it was convenient considering the data model of the platform.
 func (b *roleBuilder) Grants(_ context.Context, _ *v2.Resource, _ *pagination.Token) ([]*v2.Grant, string, annotations.Annotations, error) {
 	return nil, "", nil, nil
+}
+
+func (b *roleBuilder) Grant(ctx context.Context, principal *v2.Resource, entitlement *v2.Entitlement) (annotations.Annotations, error) {
+	l := ctxzap.Extract(ctx)
+	if principal.Id.ResourceType != userResourceType.Id {
+		l.Warn("ringcentral-connector: only users can be granted with role membership",
+			zap.String("principal_id", principal.Id.Resource),
+			zap.String("principal_type", principal.Id.Resource))
+		return nil, fmt.Errorf("ringcentral-connector: only users can be granted with role membership")
+	}
+
+	err := b.client.UpdateUserRole(ctx, principal, entitlement.Resource.Id.Resource)
+	if err != nil {
+		return nil, err
+	}
+
+	return nil, nil
+}
+
+func (b *roleBuilder) Revoke(ctx context.Context, grant *v2.Grant) (annotations.Annotations, error) {
+	return nil, nil
 }
 
 func parseIntoRoleResource(role client.Role) (*v2.Resource, error) {

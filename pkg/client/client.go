@@ -16,7 +16,7 @@ const (
 	urlBase           = "https://platform.ringcentral.com/restapi/v1.0"
 	getExtensions     = "/account/~/extension"
 	getAvailableRoles = "/account/~/user-role"
-	getUserRoles      = "/account/~/extension/%s/assigned-role"
+	userRoles         = "/account/~/extension/%s/assigned-role"
 )
 
 type RingCentralClient struct {
@@ -63,6 +63,7 @@ func (c *RingCentralClient) doRequest(
 	method string,
 	endpointUrl string,
 	res interface{},
+	body interface{},
 	reqOpts ...ReqOpt,
 ) (http.Header, error) {
 	var (
@@ -86,6 +87,7 @@ func (c *RingCentralClient) doRequest(
 		uhttp.WithAcceptJSONHeader(),
 		uhttp.WithContentTypeJSONHeader(),
 		uhttp.WithHeader("Authorization", "Bearer "+c.GetToken()),
+		uhttp.WithJSONBody(body),
 	)
 	if err != nil {
 		return nil, err
@@ -147,12 +149,12 @@ func (c *RingCentralClient) ListAllAvailableRoles(ctx context.Context, pageOps P
 
 func (c *RingCentralClient) GetUserAssignedRoles(ctx context.Context, userResource *v2.Resource) ([]UserRole, error) {
 	var res UserRoleResponse
-	queryUrl, err := url.JoinPath(urlBase, fmt.Sprintf(getUserRoles, userResource.Id.Resource))
+	queryUrl, err := url.JoinPath(urlBase, fmt.Sprintf(userRoles, userResource.Id.Resource))
 	if err != nil {
 		return nil, err
 	}
 
-	_, err = c.doRequest(ctx, http.MethodGet, queryUrl, &res)
+	_, err = c.doRequest(ctx, http.MethodGet, queryUrl, &res, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -168,11 +170,12 @@ func (c *RingCentralClient) getExtensionsListFromAPI(
 ) (string, error) {
 	var pageToken string
 
-	_, err := c.doRequest(ctx, http.MethodGet, urlAddress, &res, reqOpt...)
+	_, err := c.doRequest(ctx, http.MethodGet, urlAddress, &res, nil, reqOpt...)
 	if err != nil {
 		return "", err
 	}
 
+	// TODO implement proper pagination for this API
 	nav := res.Navigation
 	if res.Uri == nav.LastPage.Uri {
 		pageToken = ""
@@ -184,15 +187,59 @@ func (c *RingCentralClient) getExtensionsListFromAPI(
 func (c *RingCentralClient) getRolesListFromAPI(ctx context.Context, urlAddress string, res *RoleResponse, reqOpt ...ReqOpt) (string, error) {
 	var pageToken string
 
-	_, err := c.doRequest(ctx, http.MethodGet, urlAddress, &res, reqOpt...)
+	_, err := c.doRequest(ctx, http.MethodGet, urlAddress, &res, nil, reqOpt...)
 	if err != nil {
 		return "", err
 	}
 
+	// TODO implement proper pagination for this API
 	nav := res.Navigation
 	if res.Uri == nav.LastPage.Uri {
 		pageToken = ""
 	}
 
 	return pageToken, nil
+}
+
+// IdKeyValue is an auxiliary structure to build the body for the operation of update the roles list of a user.
+type IdKeyValue struct {
+	Id string `json:"id"`
+}
+
+// UpdateUserRole receives the user resource (the principal of the Grant operation) and request the curren assigned roles for it.
+// Then, if the role that will be assigned isn't already part of the user roles, it sends the whole role list to the platform.
+func (c *RingCentralClient) UpdateUserRole(ctx context.Context, userResource *v2.Resource, roleID string) error {
+	var roleIDs []IdKeyValue
+
+	// Request the list of the assigned roles of the user to be able to add the new one to that list.
+	assignedRoles, err := c.GetUserAssignedRoles(ctx, userResource)
+	if err != nil {
+		return err
+	}
+
+	for _, assignedRole := range assignedRoles {
+		arID := assignedRole.Id
+
+		if arID == roleID {
+			return fmt.Errorf("the role with ID: '%s' is already assigned to the user with ID: '%s'", roleID, userResource.Id.Resource)
+		}
+		roleIDs = append(roleIDs, IdKeyValue{Id: arID})
+	}
+	roleIDs = append(roleIDs, IdKeyValue{Id: roleID})
+
+	body := map[string]interface{}{
+		"records": roleIDs,
+	}
+
+	requestURL, err := url.JoinPath(urlBase, fmt.Sprintf(userRoles, userResource.Id.Resource))
+	if err != nil {
+		return err
+	}
+
+	_, err = c.doRequest(ctx, http.MethodPut, requestURL, nil, body)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
