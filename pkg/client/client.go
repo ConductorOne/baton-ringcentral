@@ -206,10 +206,13 @@ type IdKeyValue struct {
 	Id string `json:"id"`
 }
 
-// UpdateUserRole receives the user resource (the principal of the Grant operation) and request the curren assigned roles for it.
-// Then, if the role that will be assigned isn't already part of the user roles, it sends the whole role list to the platform.
-func (c *RingCentralClient) UpdateUserRole(ctx context.Context, userResource *v2.Resource, roleID string) error {
-	var roleIDs []IdKeyValue
+// UpdateUserRoles receives the user resource (the principal of the Grant operation) and request the curren assigned roles for it.
+// This function can be called on "revoking mode" or "granting mode". isRevoking sets the behavior.
+// While granting: if the role that will be assigned isn't already part of the user roles, it sends the whole role list to the platform.
+// While revoking: the list of assigned roles is sent to the platform by previously deleting the desired role.
+func (c *RingCentralClient) UpdateUserRoles(ctx context.Context, userResource *v2.Resource, roleID string, isRevoking bool) error {
+	// This variable is initialized like this and not with the "var roleIDs []IdKeyValue" semantic since it produces a bug when the array receives no elements.
+	roleIDs := []IdKeyValue{}
 
 	// Request the list of the assigned roles of the user to be able to add the new one to that list.
 	assignedRoles, err := c.GetUserAssignedRoles(ctx, userResource)
@@ -221,16 +224,26 @@ func (c *RingCentralClient) UpdateUserRole(ctx context.Context, userResource *v2
 		arID := assignedRole.Id
 
 		if arID == roleID {
-			return fmt.Errorf("the role with ID: '%s' is already assigned to the user with ID: '%s'", roleID, userResource.Id.Resource)
+			if isRevoking {
+				// While revoking: If the current role ID equals the role that must be removed, it avoids adding it to the roles list.
+				continue
+			} else {
+				// While granting: If the current role ID equals the role should be added, an error is thrown, since the user already has that role.
+				return fmt.Errorf("the role with ID: '%s' is already assigned to the user with ID: '%s'", roleID, userResource.Id.Resource)
+			}
+
 		}
+
 		roleIDs = append(roleIDs, IdKeyValue{Id: arID})
 	}
-	roleIDs = append(roleIDs, IdKeyValue{Id: roleID})
+
+	if !isRevoking {
+		roleIDs = append(roleIDs, IdKeyValue{Id: roleID})
+	}
 
 	body := map[string]interface{}{
 		"records": roleIDs,
 	}
-
 	requestURL, err := url.JoinPath(urlBase, fmt.Sprintf(userRoles, userResource.Id.Resource))
 	if err != nil {
 		return err

@@ -86,7 +86,9 @@ func (b *roleBuilder) Grant(ctx context.Context, principal *v2.Resource, entitle
 		return nil, fmt.Errorf("ringcentral-connector: only users can be granted with role membership")
 	}
 
-	err := b.client.UpdateUserRole(ctx, principal, entitlement.Resource.Id.Resource)
+	roleID := entitlement.Resource.Id.Resource
+	//err := b.client.AddRoleToUser(ctx, principal, roleID)
+	err := b.client.UpdateUserRoles(ctx, principal, roleID, false)
 	if err != nil {
 		return nil, err
 	}
@@ -95,6 +97,13 @@ func (b *roleBuilder) Grant(ctx context.Context, principal *v2.Resource, entitle
 }
 
 func (b *roleBuilder) Revoke(ctx context.Context, grant *v2.Grant) (annotations.Annotations, error) {
+	roleID := grant.Entitlement.Resource.Id.Resource
+	
+	err := b.client.UpdateUserRoles(ctx, grant.Principal, roleID, true)
+	if err != nil {
+		return nil, err
+	}
+
 	return nil, nil
 }
 
