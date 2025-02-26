@@ -15,7 +15,7 @@ type userBuilder struct {
 	client       *client.RingCentralClient
 }
 
-func (b *userBuilder) ResourceType(ctx context.Context) *v2.ResourceType {
+func (b *userBuilder) ResourceType(_ context.Context) *v2.ResourceType {
 	return userResourceType
 }
 
@@ -33,7 +33,6 @@ func (b *userBuilder) List(ctx context.Context, _ *v2.ResourceId, pToken *pagina
 		Page:    pageToken,
 		PerPage: pToken.Size,
 	})
-
 	if err != nil {
 		return nil, "", nil, err
 	}

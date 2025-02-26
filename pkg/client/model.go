@@ -8,6 +8,12 @@ type TokenResponse struct {
 
 // Generic structures -->
 
+type BasicResponse struct {
+	Uri        string     `json:"uri,omitempty"`
+	Paging     Paging     `json:"paging,omitempty"`
+	Navigation Navigation `json:"navigation,omitempty"`
+}
+
 type Paging struct {
 	Page       int `json:"page,omitempty"`
 	TotalPages int `json:"totalPages,omitempty"`
@@ -28,10 +34,8 @@ type NavPage struct {
 // Extension Response Structures -->
 
 type ExtensionResponse struct {
-	Uri        string      `json:"uri,omitempty"`
-	Records    []Extension `json:"records,omitempty"`
-	Paging     Paging      `json:"paging,omitempty"`
-	Navigation Navigation  `json:"navigation,omitempty"`
+	BasicResponse
+	Records []Extension `json:"records,omitempty"`
 }
 
 type Extension struct {
@@ -53,10 +57,8 @@ type ExtensionContact struct {
 // Role Response Structures -->
 
 type RoleResponse struct {
-	Uri        string     `json:"uri,omitempty"`
-	Records    []Role     `json:"records,omitempty"`
-	Paging     Paging     `json:"paging,omitempty"`
-	Navigation Navigation `json:"navigation,omitempty"`
+	BasicResponse
+	Records []Role `json:"records,omitempty"`
 }
 
 type Role struct {

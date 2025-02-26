@@ -85,12 +85,14 @@ func New(ctx context.Context, opts ...Option) (*RingCentralClient, error) {
 		o(&rcClient)
 	}
 
-	newAccessToken, err := rcClient.requestAccessToken()
-	if err != nil {
-		return nil, err
+	if rcClient.Config.ClientID != "" && rcClient.Config.ClientSecret != "" && rcClient.Config.JWT != "" {
+		newAccessToken, err := rcClient.requestAccessToken()
+		if err != nil {
+			return nil, err
+		}
+		rcClient.accessToken = newAccessToken
 	}
-	rcClient.accessToken = newAccessToken
-
+	
 	return &rcClient, nil
 }
 

@@ -62,7 +62,7 @@ func (b *roleBuilder) List(ctx context.Context, _ *v2.ResourceId, pToken *pagina
 	return roleResources, nextPageToken, nil, nil
 }
 
-func (b *roleBuilder) Entitlements(ctx context.Context, resource *v2.Resource, pToken *pagination.Token) ([]*v2.Entitlement, string, annotations.Annotations, error) {
+func (b *roleBuilder) Entitlements(_ context.Context, resource *v2.Resource, _ *pagination.Token) ([]*v2.Entitlement, string, annotations.Annotations, error) {
 	var roleEntitlements []*v2.Entitlement
 
 	assigmentOptions := []entitlement.EntitlementOption{
