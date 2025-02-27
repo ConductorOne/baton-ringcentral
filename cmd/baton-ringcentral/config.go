@@ -12,9 +12,23 @@ const (
 )
 
 var (
-	rcClientIDField     = field.StringField(ringCentralClientID, field.WithRequired(true), field.WithDescription("Client ID of the Baton App for RingCentral"))
-	rcClientSecretField = field.StringField(ringCentralClientSecret, field.WithRequired(true), field.WithDescription("Client Secret of the Baton App for RingCentral"))
-	rcJWTField          = field.StringField(ringCentralJWT, field.WithRequired(true), field.WithDescription("JWT of the admin user on RingCentral platform"))
+	rcClientIDField = field.StringField(
+		ringCentralClientID,
+		field.WithRequired(true),
+		field.WithDescription("Client ID of the Baton App for RingCentral"),
+	)
+
+	rcClientSecretField = field.StringField(
+		ringCentralClientSecret,
+		field.WithRequired(true),
+		field.WithDescription("Client Secret of the Baton App for RingCentral"),
+	)
+
+	rcJWTField = field.StringField(
+		ringCentralJWT,
+		field.WithRequired(true),
+		field.WithDescription("JWT of the admin user on RingCentral platform"),
+	)
 
 	// ConfigurationFields defines the external configuration required for the
 	// connector to run. Note: these fields can be marked as optional or
@@ -24,12 +38,6 @@ var (
 		rcClientSecretField,
 		rcJWTField,
 	}
-
-	// FieldRelationships defines relationships between the fields listed in
-	// ConfigurationFields that can be automatically validated. For example, a
-	// username and password can be required together, or an access token can be
-	// marked as mutually exclusive from the username password pair.
-	FieldRelationships = []field.SchemaFieldRelationship{}
 )
 
 // ValidateConfig is run after the configuration is loaded, and should return an

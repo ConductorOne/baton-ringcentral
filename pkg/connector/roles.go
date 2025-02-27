@@ -77,8 +77,10 @@ func (b *roleBuilder) Entitlements(_ context.Context, resource *v2.Resource, _ *
 	return roleEntitlements, "", nil, nil
 }
 
-// Grants function isn't implemented here because they are build in the Grants function of the Roles.
-// This was made like this since it was convenient considering the data model of the platform.
+/*
+Grants function isn't implemented here because they are build in the Grants function of the Roles.
+This was made like this since it was convenient considering the data model of the platform.
+*/
 func (b *roleBuilder) Grants(_ context.Context, _ *v2.Resource, _ *pagination.Token) ([]*v2.Grant, string, annotations.Annotations, error) {
 	return nil, "", nil, nil
 }

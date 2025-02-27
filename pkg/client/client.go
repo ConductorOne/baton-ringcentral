@@ -18,7 +18,8 @@ import (
 )
 
 const (
-	urlBase           = "https://platform.ringcentral.com/restapi"
+	urlBase = "https://platform.ringcentral.com/restapi"
+
 	oauthURL          = "/oauth/token"
 	getExtensions     = "/v1.0/account/~/extension"
 	getAvailableRoles = "/v1.0/account/~/user-role"
@@ -26,9 +27,9 @@ const (
 )
 
 type RingCentralClient struct {
+	Config      ClientConfig
 	client      *uhttp.BaseHttpClient
 	accessToken string
-	Config      ClientConfig
 }
 
 type ClientConfig struct {
@@ -189,8 +190,10 @@ func (c *RingCentralClient) doRequest(
 	return resp.Header, nil
 }
 
-// ListAllUsers returns an array of users of the platform belonging to the company.
-// Users withing the platform are named as 'Extension'.
+/*
+ListAllUsers returns an array of users of the platform belonging to the company.
+Users withing the platform are named as 'Extension'.
+*/
 func (c *RingCentralClient) ListAllUsers(ctx context.Context, pageOps PageOptions) ([]Extension, string, error) {
 	var response ExtensionResponse
 
@@ -278,10 +281,12 @@ type IdKeyValue struct {
 	Id string `json:"id"`
 }
 
-// UpdateUserRoles receives the user resource (the principal of the Grant operation) and request the curren assigned roles for it.
-// This function can be called on "revoking mode" or "granting mode". isRevoking sets the behavior.
-// While granting: if the role that will be assigned isn't already part of the user roles, it sends the whole role list to the platform.
-// While revoking: the list of assigned roles is sent to the platform by previously deleting the desired role.
+/*
+UpdateUserRoles receives the user resource (the principal of the Grant operation) and request the curren assigned roles for it.
+This function can be called on "revoking mode" or "granting mode". isRevoking sets the behavior.
+While granting: if the role that will be assigned isn't already part of the user roles, it sends the whole role list to the platform.
+While revoking: the list of assigned roles is sent to the platform by previously deleting the desired role.
+*/
 func (c *RingCentralClient) UpdateUserRoles(ctx context.Context, userResource *v2.Resource, roleID string, isRevoking bool) error {
 	// This variable is initialized like this and not with the "var roleIDs []IdKeyValue" semantic since it produces a bug when the array receives no elements.
 	roleIDs := []IdKeyValue{}
