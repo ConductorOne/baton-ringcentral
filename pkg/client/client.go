@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -121,7 +120,7 @@ func (c *RingCentralClient) requestAccessToken(ctx context.Context) (string, err
 
 	resp, err := c.client.Do(req)
 	if err != nil {
-		log.Fatalf("Error haciendo la solicitud: %v", err)
+		return "", err
 	}
 	defer resp.Body.Close()
 
