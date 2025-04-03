@@ -12,10 +12,24 @@
       "capabilities": [
         "CAPABILITY_SYNC"
       ]
+    },
+    {
+      "resourceType": {
+        "id": "role",
+        "displayName": "Role",
+        "traits": [
+          "TRAIT_ROLE"
+        ]
+      },
+      "capabilities": [
+        "CAPABILITY_SYNC",
+        "CAPABILITY_PROVISION"
+      ]
     }
   ],
   "connectorCapabilities": [
-    "CAPABILITY_SYNC"
+    "CAPABILITY_SYNC",
+    "CAPABILITY_PROVISION"
   ],
   "credentialDetails": {}
 }
