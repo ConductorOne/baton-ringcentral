@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"os"
 
+	cfg "github.com/conductorone/baton-ringcentral/pkg/config"
 	"github.com/conductorone/baton-ringcentral/pkg/connector"
 	"github.com/conductorone/baton-sdk/pkg/config"
 	"github.com/conductorone/baton-sdk/pkg/connectorbuilder"
 	"github.com/conductorone/baton-sdk/pkg/connectorrunner"
-	"github.com/conductorone/baton-sdk/pkg/field"
 	"github.com/conductorone/baton-sdk/pkg/types"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
 	"github.com/spf13/viper"
@@ -25,9 +25,7 @@ func main() {
 		ctx,
 		"baton-ringcentral",
 		getConnector,
-		field.Configuration{
-			Fields: ConfigurationFields,
-		},
+		cfg.Config,
 		connectorrunner.WithDefaultCapabilitiesConnectorBuilder(&connector.Connector{}),
 	)
 	if err != nil {
@@ -46,9 +44,9 @@ func main() {
 
 func getConnector(ctx context.Context, v *viper.Viper) (types.ConnectorServer, error) {
 	// Get the arguments from Viper
-	rcClientID := v.GetString(ringCentralClientID)
-	rcClientSecret := v.GetString(ringCentralClientSecret)
-	rcJWT := v.GetString(ringCentralJWT)
+	rcClientID := v.GetString(cfg.RCClientIDField.FieldName)
+	rcClientSecret := v.GetString(cfg.RCClientSecretField.FieldName)
+	rcJWT := v.GetString(cfg.RCJWTField.FieldName)
 
 	l := ctxzap.Extract(ctx)
 	if err := ValidateConfig(v); err != nil {
