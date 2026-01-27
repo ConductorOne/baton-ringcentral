@@ -9,10 +9,8 @@ import (
 	"github.com/conductorone/baton-ringcentral/pkg/connector"
 	"github.com/conductorone/baton-sdk/pkg/config"
 	"github.com/conductorone/baton-sdk/pkg/connectorbuilder"
-	"github.com/conductorone/baton-sdk/pkg/connectorrunner"
 	"github.com/conductorone/baton-sdk/pkg/types"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
-	"github.com/spf13/viper"
 	"go.uber.org/zap"
 )
 
@@ -26,7 +24,6 @@ func main() {
 		"baton-ringcentral",
 		getConnector,
 		cfg.Config,
-		connectorrunner.WithDefaultCapabilitiesConnectorBuilder(&connector.Connector{}),
 	)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err.Error())
@@ -42,22 +39,17 @@ func main() {
 	}
 }
 
-func getConnector(ctx context.Context, v *viper.Viper) (types.ConnectorServer, error) {
-	// Get the arguments from Viper
-	rcClientID := v.GetString(cfg.RCClientIDField.FieldName)
-	rcClientSecret := v.GetString(cfg.RCClientSecretField.FieldName)
-	rcJWT := v.GetString(cfg.RCJWTField.FieldName)
-
+func getConnector(ctx context.Context, rc *cfg.Ringcentral) (types.ConnectorServer, error) {
 	l := ctxzap.Extract(ctx)
-	if err := ValidateConfig(v); err != nil {
+	if err := cfg.ValidateConfig(rc); err != nil {
 		return nil, err
 	}
 
 	cb, err := connector.New(
 		ctx,
-		rcClientID,
-		rcClientSecret,
-		rcJWT,
+		rc.RingcentralClientId,
+		rc.RingcentralClientSecret,
+		rc.RingcentralJwt,
 	)
 	if err != nil {
 		l.Error("error creating connector", zap.Error(err))
