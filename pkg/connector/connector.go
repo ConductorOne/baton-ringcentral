@@ -5,9 +5,11 @@ import (
 	"io"
 
 	"github.com/conductorone/baton-ringcentral/pkg/client"
+	cfg "github.com/conductorone/baton-ringcentral/pkg/config"
 
 	v2 "github.com/conductorone/baton-sdk/pb/c1/connector/v2"
 	"github.com/conductorone/baton-sdk/pkg/annotations"
+	"github.com/conductorone/baton-sdk/pkg/cli"
 	"github.com/conductorone/baton-sdk/pkg/connectorbuilder"
 )
 
@@ -16,8 +18,8 @@ type Connector struct {
 }
 
 // ResourceSyncers returns a ResourceSyncer for each resource type that should be synced from the upstream service.
-func (d *Connector) ResourceSyncers(_ context.Context) []connectorbuilder.ResourceSyncer {
-	return []connectorbuilder.ResourceSyncer{
+func (d *Connector) ResourceSyncers(_ context.Context) []connectorbuilder.ResourceSyncerV2 {
+	return []connectorbuilder.ResourceSyncerV2{
 		newUserBuilder(d.client),
 		newRoleBuilder(d.client),
 	}
@@ -44,7 +46,11 @@ func (d *Connector) Validate(_ context.Context) (annotations.Annotations, error)
 }
 
 // New returns a new instance of the connector.
-func New(ctx context.Context, rcClientID, rcClientSecret, rcJWT string) (*Connector, error) {
+func New(ctx context.Context, cc *cfg.Ringcentral, opts *cli.ConnectorOpts) (connectorbuilder.ConnectorBuilderV2, []connectorbuilder.Opt, error) {
+	rcClientID := cc.RingcentralClientId
+	rcClientSecret := cc.RingcentralClientSecret
+	rcJWT := cc.RingcentralJwt
+
 	c, err := client.New(
 		ctx,
 		client.WithClientID(rcClientID),
@@ -52,10 +58,10 @@ func New(ctx context.Context, rcClientID, rcClientSecret, rcJWT string) (*Connec
 		client.WithJWT(rcJWT),
 	)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	return &Connector{
 		client: c,
-	}, nil
+	}, nil, nil
 }
