@@ -7,7 +7,6 @@ import (
 	"github.com/conductorone/baton-ringcentral/pkg/client"
 	v2 "github.com/conductorone/baton-sdk/pb/c1/connector/v2"
 	"github.com/conductorone/baton-sdk/pkg/annotations"
-	"github.com/conductorone/baton-sdk/pkg/pagination"
 	"github.com/conductorone/baton-sdk/pkg/types/entitlement"
 	rs "github.com/conductorone/baton-sdk/pkg/types/resource"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
@@ -25,12 +24,13 @@ func (b *roleBuilder) ResourceType(_ context.Context) *v2.ResourceType {
 	return roleResourceType
 }
 
-func (b *roleBuilder) List(ctx context.Context, _ *v2.ResourceId, pToken *pagination.Token) ([]*v2.Resource, string, annotations.Annotations, error) {
+func (b *roleBuilder) List(ctx context.Context, _ *v2.ResourceId, attrs rs.SyncOpAttrs) ([]*v2.Resource, *rs.SyncOpResults, error) {
 	var roleResources []*v2.Resource
+	pToken := attrs.PageToken
 
-	bag, pageToken, err := getToken(pToken, userResourceType)
+	bag, pageToken, err := getToken(&pToken, userResourceType)
 	if err != nil {
-		return nil, "", nil, err
+		return nil, nil, err
 	}
 
 	roles, nextPageToken, err := b.client.ListAllAvailableRoles(ctx, client.PageOptions{
@@ -38,18 +38,18 @@ func (b *roleBuilder) List(ctx context.Context, _ *v2.ResourceId, pToken *pagina
 		PerPage: pToken.Size,
 	})
 	if err != nil {
-		return nil, "", nil, err
+		return nil, nil, err
 	}
 
 	err = bag.Next(nextPageToken)
 	if err != nil {
-		return nil, "", nil, err
+		return nil, nil, err
 	}
 
 	for _, role := range roles {
 		roleResource, err := parseIntoRoleResource(role)
 		if err != nil {
-			return nil, "", nil, err
+			return nil, nil, err
 		}
 
 		roleResources = append(roleResources, roleResource)
@@ -57,13 +57,13 @@ func (b *roleBuilder) List(ctx context.Context, _ *v2.ResourceId, pToken *pagina
 
 	nextPageToken, err = bag.Marshal()
 	if err != nil {
-		return nil, "", nil, err
+		return nil, nil, err
 	}
 
-	return roleResources, nextPageToken, nil, nil
+	return roleResources, &rs.SyncOpResults{NextPageToken: nextPageToken}, nil
 }
 
-func (b *roleBuilder) Entitlements(_ context.Context, resource *v2.Resource, _ *pagination.Token) ([]*v2.Entitlement, string, annotations.Annotations, error) {
+func (b *roleBuilder) Entitlements(_ context.Context, resource *v2.Resource, _ rs.SyncOpAttrs) ([]*v2.Entitlement, *rs.SyncOpResults, error) {
 	var roleEntitlements []*v2.Entitlement
 
 	assigmentOptions := []entitlement.EntitlementOption{
@@ -74,15 +74,15 @@ func (b *roleBuilder) Entitlements(_ context.Context, resource *v2.Resource, _ *
 
 	roleEntitlements = append(roleEntitlements, entitlement.NewPermissionEntitlement(resource, rolePermissionName, assigmentOptions...))
 
-	return roleEntitlements, "", nil, nil
+	return roleEntitlements, nil, nil
 }
 
 /*
 Grants function isn't implemented here because they are build in the Grants function of the Users.
 This was made like this since it was convenient considering the data model of the platform.
 */
-func (b *roleBuilder) Grants(_ context.Context, _ *v2.Resource, _ *pagination.Token) ([]*v2.Grant, string, annotations.Annotations, error) {
-	return nil, "", nil, nil
+func (b *roleBuilder) Grants(_ context.Context, _ *v2.Resource, _ rs.SyncOpAttrs) ([]*v2.Grant, *rs.SyncOpResults, error) {
+	return nil, nil, nil
 }
 
 func (b *roleBuilder) Grant(ctx context.Context, principal *v2.Resource, entitlement *v2.Entitlement) (annotations.Annotations, error) {
