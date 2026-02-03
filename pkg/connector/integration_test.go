@@ -9,6 +9,7 @@ import (
 	"github.com/conductorone/baton-ringcentral/pkg/client"
 	v2 "github.com/conductorone/baton-sdk/pb/c1/connector/v2"
 	"github.com/conductorone/baton-sdk/pkg/pagination"
+	rs "github.com/conductorone/baton-sdk/pkg/types/resource"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -49,20 +50,21 @@ func TestUserBuilder_List(t *testing.T) {
 	b := newUserBuilder(c)
 
 	var users []*v2.Resource
-	paginationToken := &pagination.Token{
+	paginationToken := pagination.Token{
 		Size: 2, Token: "",
 	}
 	for {
-		userResources, nextPageToken, _, err := b.List(ctx, parentResourceID, paginationToken)
+		attrs := rs.SyncOpAttrs{PageToken: paginationToken}
+		userResources, results, err := b.List(ctx, parentResourceID, attrs)
 		if err != nil {
 			message = fmt.Sprintf("error listing users: %v", err)
 			t.Fatal(message)
 		}
 		users = append(users, userResources...)
-		if nextPageToken == "" {
+		if results == nil || results.NextPageToken == "" {
 			break
 		}
-		paginationToken.Token = nextPageToken
+		paginationToken.Token = results.NextPageToken
 	}
 
 	assert.NotNil(t, users)
@@ -94,20 +96,21 @@ func TestRoleBuilder_List(t *testing.T) {
 	b := newRoleBuilder(c)
 
 	var roles []*v2.Resource
-	paginationToken := &pagination.Token{
+	paginationToken := pagination.Token{
 		Size: 5, Token: "",
 	}
 	for {
-		roleResources, nextPageToken, _, err := b.List(ctx, parentResourceID, paginationToken)
+		attrs := rs.SyncOpAttrs{PageToken: paginationToken}
+		roleResources, results, err := b.List(ctx, parentResourceID, attrs)
 		if err != nil {
 			message = fmt.Sprintf("error listing roles: %v", err)
 			t.Fatal(message)
 		}
 		roles = append(roles, roleResources...)
-		if nextPageToken == "" {
+		if results == nil || results.NextPageToken == "" {
 			break
 		}
-		paginationToken.Token = nextPageToken
+		paginationToken.Token = results.NextPageToken
 	}
 
 	assert.NotNil(t, roles)
@@ -125,7 +128,8 @@ func TestRoleBuilder_Entitlements(t *testing.T) {
 	b := newRoleBuilder(c)
 
 	for _, role := range rolesCache {
-		entitlementResource, _, _, err := b.Entitlements(ctx, role, nil)
+		attrs := rs.SyncOpAttrs{}
+		entitlementResource, _, err := b.Entitlements(ctx, role, attrs)
 		if err != nil {
 			message = fmt.Sprintf("error creating entitlement: %v", err)
 			t.Fatal(message)

@@ -28,7 +28,7 @@ func (b *roleBuilder) List(ctx context.Context, _ *v2.ResourceId, attrs rs.SyncO
 	var roleResources []*v2.Resource
 	pToken := attrs.PageToken
 
-	bag, pageToken, err := getToken(&pToken, userResourceType)
+	bag, pageToken, err := getToken(&pToken, roleResourceType)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -85,22 +85,22 @@ func (b *roleBuilder) Grants(_ context.Context, _ *v2.Resource, _ rs.SyncOpAttrs
 	return nil, nil, nil
 }
 
-func (b *roleBuilder) Grant(ctx context.Context, principal *v2.Resource, entitlement *v2.Entitlement) (annotations.Annotations, error) {
+func (b *roleBuilder) Grant(ctx context.Context, principal *v2.Resource, entitlement *v2.Entitlement) ([]*v2.Grant, annotations.Annotations, error) {
 	l := ctxzap.Extract(ctx)
 	if principal.Id.ResourceType != userResourceType.Id {
 		l.Warn("ringcentral-connector: only users can be granted with role membership",
 			zap.String("principal_id", principal.Id.Resource),
 			zap.String("principal_type", principal.Id.Resource))
-		return nil, fmt.Errorf("ringcentral-connector: only users can be granted with role membership")
+		return nil, nil, fmt.Errorf("ringcentral-connector: only users can be granted with role membership")
 	}
 
 	roleID := entitlement.Resource.Id.Resource
 	err := b.client.UpdateUserRoles(ctx, principal, roleID, false)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return nil, nil
+	return nil, nil, nil
 }
 
 func (b *roleBuilder) Revoke(ctx context.Context, grant *v2.Grant) (annotations.Annotations, error) {
