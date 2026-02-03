@@ -46,7 +46,7 @@ func (d *Connector) Validate(_ context.Context) (annotations.Annotations, error)
 }
 
 // New returns a new instance of the connector.
-func New(ctx context.Context, cc *cfg.Ringcentral, opts *cli.ConnectorOpts) (connectorbuilder.ConnectorBuilderV2, error) {
+func New(ctx context.Context, cc *cfg.Ringcentral, opts *cli.ConnectorOpts) (connectorbuilder.ConnectorBuilderV2, []connectorbuilder.Opt, error) {
 	rcClientID := cc.RingcentralClientId
 	rcClientSecret := cc.RingcentralClientSecret
 	rcJWT := cc.RingcentralJwt
@@ -58,10 +58,10 @@ func New(ctx context.Context, cc *cfg.Ringcentral, opts *cli.ConnectorOpts) (con
 		client.WithJWT(rcJWT),
 	)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	return &Connector{
 		client: c,
-	}, nil
+	}, nil, nil
 }

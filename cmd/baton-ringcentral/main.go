@@ -18,6 +18,6 @@ func main() {
 		version,
 		cfg.Config,
 		connector.New,
-		config.WithDefaultCapabilitiesConnectorBuilder(),
+		connectorrunner.WithDefaultCapabilitiesConnectorBuilderV2(&connector.Connector{}),
 	)
 }
