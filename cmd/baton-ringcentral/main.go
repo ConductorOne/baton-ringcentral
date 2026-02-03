@@ -18,6 +18,7 @@ func main() {
 		version,
 		cfg.Config,
 		connector.New,
+		config.WithDefaultCapabilitiesConnectorBuilder(),
 		connectorrunner.WithSessionStoreEnabled(),
 	)
 }
