@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	urlBase = "https://platform.ringcentral.com/restapi"
+	defaultBaseURL = "https://platform.ringcentral.com/restapi"
 
 	oauthURL          = "/oauth/token"
 	getExtensions     = "/v1.0/account/~/extension"
@@ -29,6 +29,7 @@ type RingCentralClient struct {
 	Config      ClientConfig
 	client      *uhttp.BaseHttpClient
 	accessToken string
+	baseURL     string
 }
 
 type ClientConfig struct {
@@ -63,6 +64,14 @@ func WithJWT(jwt string) Option {
 	}
 }
 
+func WithBaseURL(baseURL string) Option {
+	return func(c *RingCentralClient) {
+		if baseURL != "" {
+			c.baseURL = baseURL
+		}
+	}
+}
+
 func (c *RingCentralClient) GetToken() string {
 	return c.accessToken
 }
@@ -79,7 +88,8 @@ func New(ctx context.Context, opts ...Option) (*RingCentralClient, error) {
 	}
 
 	rcClient := RingCentralClient{
-		client: cli,
+		client:  cli,
+		baseURL: defaultBaseURL,
 	}
 
 	for _, o := range opts {
@@ -98,7 +108,7 @@ func New(ctx context.Context, opts ...Option) (*RingCentralClient, error) {
 }
 
 func (c *RingCentralClient) requestAccessToken(ctx context.Context) (string, error) {
-	requestURL, err := url.JoinPath(urlBase, oauthURL)
+	requestURL, err := url.JoinPath(c.baseURL, oauthURL)
 	if err != nil {
 		return "", err
 	}
@@ -196,7 +206,7 @@ Users withing the platform are named as 'Extension'.
 func (c *RingCentralClient) ListAllUsers(ctx context.Context, pageOps PageOptions) ([]Extension, string, error) {
 	var response ExtensionResponse
 
-	queryUrl, err := url.JoinPath(urlBase, getExtensions)
+	queryUrl, err := url.JoinPath(c.baseURL, getExtensions)
 	if err != nil {
 		return nil, "", err
 	}
@@ -212,7 +222,7 @@ func (c *RingCentralClient) ListAllUsers(ctx context.Context, pageOps PageOption
 func (c *RingCentralClient) ListAllAvailableRoles(ctx context.Context, pageOps PageOptions) ([]Role, string, error) {
 	var response RoleResponse
 
-	queryUrl, err := url.JoinPath(urlBase, getAvailableRoles)
+	queryUrl, err := url.JoinPath(c.baseURL, getAvailableRoles)
 	if err != nil {
 		return nil, "", err
 	}
@@ -227,7 +237,7 @@ func (c *RingCentralClient) ListAllAvailableRoles(ctx context.Context, pageOps P
 
 func (c *RingCentralClient) GetUserAssignedRoles(ctx context.Context, userResource *v2.Resource) ([]UserRole, error) {
 	var res UserRoleResponse
-	queryUrl, err := url.JoinPath(urlBase, fmt.Sprintf(userRoles, userResource.Id.Resource))
+	queryUrl, err := url.JoinPath(c.baseURL, fmt.Sprintf(userRoles, userResource.Id.Resource))
 	if err != nil {
 		return nil, err
 	}
@@ -319,7 +329,7 @@ func (c *RingCentralClient) UpdateUserRoles(ctx context.Context, userResource *v
 	body := map[string]interface{}{
 		"records": roleIDs,
 	}
-	requestURL, err := url.JoinPath(urlBase, fmt.Sprintf(userRoles, userResource.Id.Resource))
+	requestURL, err := url.JoinPath(c.baseURL, fmt.Sprintf(userRoles, userResource.Id.Resource))
 	if err != nil {
 		return err
 	}

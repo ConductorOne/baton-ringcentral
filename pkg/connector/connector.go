@@ -44,12 +44,13 @@ func (d *Connector) Validate(_ context.Context) (annotations.Annotations, error)
 }
 
 // New returns a new instance of the connector.
-func New(ctx context.Context, rcClientID, rcClientSecret, rcJWT string) (*Connector, error) {
+func New(ctx context.Context, rcClientID, rcClientSecret, rcJWT, baseURL string) (*Connector, error) {
 	c, err := client.New(
 		ctx,
 		client.WithClientID(rcClientID),
 		client.WithClientSecret(rcClientSecret),
 		client.WithJWT(rcJWT),
+		client.WithBaseURL(baseURL),
 	)
 	if err != nil {
 		return nil, err
