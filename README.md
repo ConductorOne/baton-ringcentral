@@ -1,6 +1,6 @@
 ![Baton Logo](./baton-logo.png)
 
-# `baton-ringcentral` [![Go Reference](https://pkg.go.dev/badge/github.com/conductorone/baton-ringcentral.svg)](https://pkg.go.dev/github.com/conductorone/baton-ringcentral) ![main ci](https://github.com/conductorone/baton-ringcentral/actions/workflows/main.yaml/badge.svg)
+# `baton-ringcentral` [![Go Reference](https://pkg.go.dev/badge/github.com/conductorone/baton-ringcentral.svg)](https://pkg.go.dev/github.com/conductorone/baton-ringcentral) ![ci](https://github.com/conductorone/baton-ringcentral/actions/workflows/ci.yaml/badge.svg)
 
 `baton-ringcentral` is a connector [RingCentral](https://www.ringcentral.com/) for built using the [Baton SDK](https://github.com/conductorone/baton-sdk). This connector syncs data with the platform, allowing you to list the users and roles available withing your company. It also allows the asignation and revoke of roles for each user.
 
