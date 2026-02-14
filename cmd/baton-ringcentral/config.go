@@ -34,6 +34,7 @@ var (
 	baseURLField = field.StringField(
 		baseURLFieldName,
 		field.WithDescription("Override the RingCentral API URL (for testing)"),
+		field.WithHidden(true),
 	)
 
 	// ConfigurationFields defines the external configuration required for the
