@@ -233,7 +233,7 @@ spec:
     spec:
       containers:
       - name: baton-ringcentral
-        image: ghcr.io/conductorone/baton-ringcentral:latest
+        image: public.ecr.aws/conductorone/baton-ringcentral:latest
         imagePullPolicy: IfNotPresent
         env:
         - name: BATON_HOST_ID
@@ -258,5 +258,3 @@ Check that the connector data uploaded correctly. In C1, click **Apps**. On the 
 **That's it!** Your RingCentral connector is now pulling access data into C1.
 </Tab>
 </Tabs>
-
-
