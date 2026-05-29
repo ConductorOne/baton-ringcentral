@@ -9,6 +9,7 @@ const (
 	ringCentralClientID     = "ringcentral-client-id"
 	ringCentralClientSecret = "ringcentral-client-secret"
 	ringCentralJWT          = "ringcentral-jwt"
+	baseURLFieldName        = "base-url"
 )
 
 var (
@@ -30,6 +31,12 @@ var (
 		field.WithDescription("JWT of the admin user on RingCentral platform"),
 	)
 
+	baseURLField = field.StringField(
+		baseURLFieldName,
+		field.WithDescription("Override the RingCentral API URL (for testing)"),
+		field.WithHidden(true),
+	)
+
 	// ConfigurationFields defines the external configuration required for the
 	// connector to run. Note: these fields can be marked as optional or
 	// required.
@@ -37,6 +44,7 @@ var (
 		rcClientIDField,
 		rcClientSecretField,
 		rcJWTField,
+		baseURLField,
 	}
 )
 

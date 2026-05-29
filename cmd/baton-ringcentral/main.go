@@ -47,6 +47,7 @@ func getConnector(ctx context.Context, v *viper.Viper) (types.ConnectorServer, e
 	rcClientID := v.GetString(ringCentralClientID)
 	rcClientSecret := v.GetString(ringCentralClientSecret)
 	rcJWT := v.GetString(ringCentralJWT)
+	baseURL := v.GetString(baseURLFieldName)
 
 	l := ctxzap.Extract(ctx)
 	if err := ValidateConfig(v); err != nil {
@@ -58,6 +59,7 @@ func getConnector(ctx context.Context, v *viper.Viper) (types.ConnectorServer, e
 		rcClientID,
 		rcClientSecret,
 		rcJWT,
+		baseURL,
 	)
 	if err != nil {
 		l.Error("error creating connector", zap.Error(err))
