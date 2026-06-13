@@ -22,12 +22,14 @@ var (
 		ringCentralClientSecret,
 		field.WithRequired(true),
 		field.WithDescription("Client Secret of the Baton App for RingCentral"),
+		field.WithIsSecret(true),
 	)
 
 	rcJWTField = field.StringField(
 		ringCentralJWT,
 		field.WithRequired(true),
 		field.WithDescription("JWT of the admin user on RingCentral platform"),
+		field.WithIsSecret(true),
 	)
 
 	// ConfigurationFields defines the external configuration required for the
