@@ -1,28 +1,26 @@
-GOOS = $(shell go env GOOS)
-GOARCH = $(shell go env GOARCH)
-BUILD_DIR = dist/${GOOS}_${GOARCH}
+CONNECTOR_NAME := baton-ringcentral
 
-ifeq ($(GOOS),windows)
-OUTPUT_PATH = ${BUILD_DIR}/baton-ringcentral.exe
-else
-OUTPUT_PATH = ${BUILD_DIR}/baton-ringcentral
+ifeq ($(BATON_LAMBDA_SUPPORT),true)
+	BUILD_TAGS := -tags baton_lambda_support
 endif
 
 .PHONY: build
 build:
-	go build -o ${OUTPUT_PATH} ./cmd/baton-ringcentral
+	go build ${BUILD_TAGS} -o bin/${CONNECTOR_NAME} ./cmd/${CONNECTOR_NAME}
 
 .PHONY: update-deps
 update-deps:
 	go get -d -u ./...
 	go mod tidy -v
-	go mod vendor
 
 .PHONY: add-dep
 add-dep:
-	go mod tidy -v
-	go mod vendor
+	go get -d -u "$v"
 
 .PHONY: lint
 lint:
 	golangci-lint run
+
+.PHONY: generate
+generate:
+	go generate ./...
