@@ -16,6 +16,8 @@ import (
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
 )
 
+var ErrRoleAlreadyAssigned = fmt.Errorf("role already assigned")
+
 const (
 	urlBase = "https://platform.ringcentral.com/restapi"
 
@@ -304,8 +306,8 @@ func (c *RingCentralClient) UpdateUserRoles(ctx context.Context, userResource *v
 				// While revoking: If the current role ID equals the role that must be removed, it avoids adding it to the roles list.
 				continue
 			} else {
-				// While granting: If the current role ID equals the role should be added, an error is thrown, since the user already has that role.
-				return fmt.Errorf("the role with ID: '%s' is already assigned to the user with ID: '%s'", roleID, userResource.Id.Resource)
+				// While granting: If the current role ID equals the role should be added, return sentinel so callers can handle idempotency.
+				return ErrRoleAlreadyAssigned
 			}
 		}
 

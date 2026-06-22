@@ -2,6 +2,7 @@ package connector
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/conductorone/baton-ringcentral/pkg/client"
@@ -96,6 +97,9 @@ func (b *roleBuilder) Grant(ctx context.Context, principal *v2.Resource, ent *v2
 	roleID := ent.Resource.Id.Resource
 	err := b.client.UpdateUserRoles(ctx, principal, roleID, false)
 	if err != nil {
+		if errors.Is(err, client.ErrRoleAlreadyAssigned) {
+			return annotations.New(&v2.GrantAlreadyExists{}), nil
+		}
 		return nil, err
 	}
 
