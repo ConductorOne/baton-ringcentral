@@ -25,3 +25,4 @@ jobs:
           baton-principal: ${{ vars.GRANT_TEST_CONNECTOR_PRINCIPAL }}
           baton-principal-type: user
           required-secrets: BATON_RINGCENTRAL_CLIENT_ID,BATON_RINGCENTRAL_CLIENT_SECRET,BATON_RINGCENTRAL_JWT
+          sleep: 60
