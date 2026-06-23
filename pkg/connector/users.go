@@ -5,8 +5,6 @@ import (
 
 	"github.com/conductorone/baton-ringcentral/pkg/client"
 	v2 "github.com/conductorone/baton-sdk/pb/c1/connector/v2"
-	"github.com/conductorone/baton-sdk/pkg/annotations"
-	"github.com/conductorone/baton-sdk/pkg/pagination"
 	"github.com/conductorone/baton-sdk/pkg/types/grant"
 	rs "github.com/conductorone/baton-sdk/pkg/types/resource"
 )
@@ -22,31 +20,31 @@ func (b *userBuilder) ResourceType(_ context.Context) *v2.ResourceType {
 
 // List returns all the users from the database as resource objects.
 // Users include a UserTrait because they are the 'shape' of a standard user.
-func (b *userBuilder) List(ctx context.Context, _ *v2.ResourceId, pToken *pagination.Token) ([]*v2.Resource, string, annotations.Annotations, error) {
+func (b *userBuilder) List(ctx context.Context, _ *v2.ResourceId, opts rs.SyncOpAttrs) ([]*v2.Resource, *rs.SyncOpResults, error) {
 	var userResources []*v2.Resource
 
-	bag, pageToken, err := getToken(pToken, userResourceType)
+	bag, pageToken, err := getToken(&opts.PageToken, userResourceType)
 	if err != nil {
-		return nil, "", nil, err
+		return nil, nil, err
 	}
 
 	users, nextPageToken, err := b.client.ListAllUsers(ctx, client.PageOptions{
 		Page:    pageToken,
-		PerPage: pToken.Size,
+		PerPage: opts.PageToken.Size,
 	})
 	if err != nil {
-		return nil, "", nil, err
+		return nil, nil, err
 	}
 
 	err = bag.Next(nextPageToken)
 	if err != nil {
-		return nil, "", nil, err
+		return nil, nil, err
 	}
 
 	for _, user := range users {
 		userResource, err := parseIntoUserResource(user)
 		if err != nil {
-			return nil, "", nil, err
+			return nil, nil, err
 		}
 
 		userResources = append(userResources, userResource)
@@ -54,25 +52,25 @@ func (b *userBuilder) List(ctx context.Context, _ *v2.ResourceId, pToken *pagina
 
 	nextPageToken, err = bag.Marshal()
 	if err != nil {
-		return nil, "", nil, err
+		return nil, nil, err
 	}
 
-	return userResources, nextPageToken, nil, nil
+	return userResources, &rs.SyncOpResults{NextPageToken: nextPageToken}, nil
 }
 
 // Entitlements always returns an empty slice for users.
-func (b *userBuilder) Entitlements(_ context.Context, _ *v2.Resource, _ *pagination.Token) ([]*v2.Entitlement, string, annotations.Annotations, error) {
-	return nil, "", nil, nil
+func (b *userBuilder) Entitlements(_ context.Context, _ *v2.Resource, _ rs.SyncOpAttrs) ([]*v2.Entitlement, *rs.SyncOpResults, error) {
+	return nil, nil, nil
 }
 
 // Grants always returns an empty slice for users since they don't have any entitlements.
 // In this case, Grants will create the Role Grants, since the Roles assigned are an internal data of each user that should be requested using the User ID.
-func (b *userBuilder) Grants(ctx context.Context, userResource *v2.Resource, _ *pagination.Token) ([]*v2.Grant, string, annotations.Annotations, error) {
+func (b *userBuilder) Grants(ctx context.Context, userResource *v2.Resource, _ rs.SyncOpAttrs) ([]*v2.Grant, *rs.SyncOpResults, error) {
 	var roleGrants []*v2.Grant
 
 	userRoles, err := b.client.GetUserAssignedRoles(ctx, userResource)
 	if err != nil {
-		return nil, "", nil, err
+		return nil, nil, err
 	}
 
 	for _, userRole := range userRoles {
@@ -85,7 +83,7 @@ func (b *userBuilder) Grants(ctx context.Context, userResource *v2.Resource, _ *
 		roleGrants = append(roleGrants, grant.NewGrant(roleResource, rolePermissionName, userResource))
 	}
 
-	return roleGrants, "", nil, nil
+	return roleGrants, nil, nil
 }
 
 // parseIntoUserResource - This function parses an Extension (users from RingCentral) into a User Resource.

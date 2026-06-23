@@ -33,7 +33,7 @@ baton-ringcentral --ringcentral-client-id --ringcentral-client-secret --ringcent
 
 baton resources
 ```
-NOTE: RingCentrals connector requires the `--ringcentral-client-id`, `--ringcentral-client-secret` and `--ringcentral-jwt` flags. Instructions on how to generate these can be found [here](https://developers.ringcentral.com/guide/authentication/jwt/quick-start). More details about the JWT authentication can be found [here](https://developers.ringcentral.com/guide/getting-started/create-credential).
+NOTE: RingCentral connector requires the `--ringcentral-client-id`, `--ringcentral-client-secret` and `--ringcentral-jwt` flags. You can create and manage your RingCentral app credentials in the [RingCentral Developer Console](https://developers.ringcentral.com/my-account.html#/applications). Instructions on how to generate a JWT can be found [here](https://developers.ringcentral.com/guide/authentication/jwt/quick-start). More details about JWT authentication can be found [here](https://developers.ringcentral.com/guide/getting-started/create-credential).
 
 # Data Model
 

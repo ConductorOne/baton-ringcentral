@@ -1,93 +1,28 @@
 name: ci
 on: pull_request
 jobs:
-  go-lint:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Install Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: 1.23.x
-      - name: Checkout code
-        uses: actions/checkout@v4
-      - name: Run linters
-        uses: golangci/golangci-lint-action@v5
-        with:
-          version: latest
-          args: --timeout=3m
-  go-test:
-    strategy:
-      matrix:
-        go-version: [1.23.x]
-        platform: [ubuntu-latest]
-    runs-on: ${{ matrix.platform }}
-    env:
-      RINGCENTRAL_CLIENT_ID: ${{ secrets.RINGCENTRAL_CLIENT_ID }}
-      RINGCENTRAL_CLIENT_SECRET: ${{ secrets.RINGCENTRAL_CLIENT_SECRET }}
-      RINGCENTRAL_JWT: ${{ secrets.RINGCENTRAL_JWT }}
-    steps:
-      - name: Install Go
-        if: success()
-        uses: actions/setup-go@v5
-        with:
-          go-version: ${{ matrix.go-version }}
-      - name: Checkout code
-        uses: actions/checkout@v4
-      - name: go tests
-        run: (set -o pipefail && go test -v -covermode=count -json ./... | tee test.json)
-      - name: annotate go tests
-        if: always()
-        uses: guyarb/golang-test-annotations@v0.5.1
-        with:
-          test-results: test.json
-
   test:
     runs-on: ubuntu-latest
     env:
       BATON_LOG_LEVEL: debug
-      RINGCENTRAL_CLIENT_ID: ${{ secrets.RINGCENTRAL_CLIENT_ID }}
-      RINGCENTRAL_CLIENT_SECRET: ${{ secrets.RINGCENTRAL_CLIENT_SECRET }}
-      RINGCENTRAL_JWT: ${{ secrets.RINGCENTRAL_JWT }}
-      CONNECTOR_GRANT: ${{ vars.REVOKE_TEST_CONNECTOR_GRANT }}
-      CONNECTOR_ENTITLEMENT: ${{ vars.GRANT_TEST_CONNECTOR_ENTITLEMENT }}
-      CONNECTOR_PRINCIPAL: ${{ vars.GRANT_TEST_CONNECTOR_PRINCIPAL }}
-      CONNECTOR_PRINCIPAL_TYPE: 'user'
+      BATON_RINGCENTRAL_CLIENT_ID: ${{ secrets.RINGCENTRAL_CLIENT_ID }}
+      BATON_RINGCENTRAL_CLIENT_SECRET: ${{ secrets.RINGCENTRAL_CLIENT_SECRET }}
+      BATON_RINGCENTRAL_JWT: ${{ secrets.RINGCENTRAL_JWT }}
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
       - name: Install Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.23.x
-      - name: Checkout code
-        uses: actions/checkout@v4
+          go-version-file: go.mod
       - name: Build baton-ringcentral
         run: go build ./cmd/baton-ringcentral
-
-      - name: Install baton
-        run: ./scripts/get-baton.sh && mv baton /usr/local/bin
-
-      - name: Sync data from RingCentral
-        run: ./baton-ringcentral --ringcentral-client-id ${{ env.RINGCENTRAL_CLIENT_ID }} --ringcentral-client-secret ${{ env.RINGCENTRAL_CLIENT_SECRET }} --ringcentral-jwt ${{ env.RINGCENTRAL_JWT }}
-
-
-      - name: Check for grant before revoking
-        run:
-          baton grants --entitlement="${{ env.CONNECTOR_ENTITLEMENT }}" --output-format=json | jq --exit-status ".grants[].principal.id.resource == \"${{ env.CONNECTOR_PRINCIPAL }}\""
-
-
-      - name: Revoke grants
-        run: ./baton-ringcentral --ringcentral-client-id ${{ env.RINGCENTRAL_CLIENT_ID }} --ringcentral-client-secret ${{ env.RINGCENTRAL_CLIENT_SECRET }} --ringcentral-jwt ${{ env.RINGCENTRAL_JWT }} --revoke-grant="${{ env.CONNECTOR_GRANT }}"
-
-      - name: Check grant was revoked (re sync + check)
-        run: ./baton-ringcentral --ringcentral-client-id ${{ env.RINGCENTRAL_CLIENT_ID }} --ringcentral-client-secret ${{ env.RINGCENTRAL_CLIENT_SECRET }} --ringcentral-jwt ${{ env.RINGCENTRAL_JWT }} && baton grants --entitlement="${{ env.CONNECTOR_ENTITLEMENT }}" --output-format=json | jq --exit-status "if .grants then .grants[]?.principal.id.resource != \"${{ env.CONNECTOR_PRINCIPAL }}\" else . end"
-
-
-      - name: Grant entitlement
-        run: ./baton-ringcentral --ringcentral-client-id ${{ env.RINGCENTRAL_CLIENT_ID }} --ringcentral-client-secret ${{ env.RINGCENTRAL_CLIENT_SECRET }} --ringcentral-jwt ${{ env.RINGCENTRAL_JWT }} --grant-entitlement="${{ env.CONNECTOR_ENTITLEMENT }}" --grant-principal="${{ env.CONNECTOR_PRINCIPAL }}" --grant-principal-type="${{ env.CONNECTOR_PRINCIPAL_TYPE }}"
-
-      - name: Re sync data from RingCentral
-        run: ./baton-ringcentral --ringcentral-client-id ${{ env.RINGCENTRAL_CLIENT_ID }} --ringcentral-client-secret ${{ env.RINGCENTRAL_CLIENT_SECRET }} --ringcentral-jwt ${{ env.RINGCENTRAL_JWT }}
-
-      - name: Check grant was re-granted
-        run:
-          baton grants --entitlement="${{ env.CONNECTOR_ENTITLEMENT }}" --output-format=json | jq --exit-status ".grants[].principal.id.resource == \"${{ env.CONNECTOR_PRINCIPAL }}\""
-
+      - name: Run sync test
+        uses: ConductorOne/github-workflows/actions/sync-test@v4
+        with:
+          connector: ./baton-ringcentral
+          baton-entitlement: ${{ vars.GRANT_TEST_CONNECTOR_ENTITLEMENT }}
+          baton-principal: ${{ vars.GRANT_TEST_CONNECTOR_PRINCIPAL }}
+          baton-principal-type: user
+          required-secrets: BATON_RINGCENTRAL_CLIENT_ID,BATON_RINGCENTRAL_CLIENT_SECRET,BATON_RINGCENTRAL_JWT
+          sleep: 60
