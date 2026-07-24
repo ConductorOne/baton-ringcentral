@@ -5,40 +5,48 @@ import (
 	"testing"
 
 	v2 "github.com/conductorone/baton-sdk/pb/c1/connector/v2"
+	"github.com/conductorone/baton-sdk/pkg/annotations"
 	"github.com/conductorone/baton-sdk/pkg/cli"
-	rs "github.com/conductorone/baton-sdk/pkg/types/resource"
 	"github.com/stretchr/testify/assert"
 )
 
-// TestUserBuilder_Grants_RoleSyncFilteredOut verifies that Grants short-circuits
-// before touching b.client when role sync is disabled. b.client is left nil on
-// purpose: if the guard were missing or wrong, dereferencing it would panic,
-// so a clean (nil, nil, nil) return with no panic is proof the early return
-// fired.
-func TestUserBuilder_Grants_RoleSyncFilteredOut(t *testing.T) {
-	b := &userBuilder{
-		resourceType: userResourceType,
-		client:       nil,
-		syncRoles:    false,
-	}
+// TestUserBuilder_ResourceType_SkipAnnotations verifies that ResourceType
+// annotates the returned (cloned) resource type based on skipRoleGrants:
+//   - skipRoleGrants=false (role sync enabled): SkipEntitlements only, since
+//     Entitlements() always returns nil regardless of role-filter state.
+//   - skipRoleGrants=true (role sync filtered out): SkipEntitlementsAndGrants,
+//     since nothing meaningful would be emitted at all.
+//
+// It also asserts the shared package-level userResourceType var is never
+// mutated by ResourceType, since other code paths read it directly.
+func TestUserBuilder_ResourceType_SkipAnnotations(t *testing.T) {
+	t.Run("role sync enabled: SkipEntitlements only", func(t *testing.T) {
+		b := &userBuilder{resourceType: userResourceType, skipRoleGrants: false}
 
-	userResource := &v2.Resource{
-		Id: &v2.ResourceId{
-			ResourceType: userResourceType.Id,
-			Resource:     "user-1",
-		},
-	}
+		rt := b.ResourceType(context.Background())
 
-	grants, results, err := b.Grants(context.Background(), userResource, rs.SyncOpAttrs{})
-	assert.NoError(t, err)
-	assert.Nil(t, grants)
-	assert.Nil(t, results)
+		annos := annotations.Annotations(rt.GetAnnotations())
+		assert.True(t, annos.Contains(&v2.SkipEntitlements{}))
+		assert.False(t, annos.Contains(&v2.SkipEntitlementsAndGrants{}))
+	})
+
+	t.Run("role sync filtered out: SkipEntitlementsAndGrants", func(t *testing.T) {
+		b := &userBuilder{resourceType: userResourceType, skipRoleGrants: true}
+
+		rt := b.ResourceType(context.Background())
+
+		annos := annotations.Annotations(rt.GetAnnotations())
+		assert.True(t, annos.Contains(&v2.SkipEntitlementsAndGrants{}))
+	})
+
+	assert.Len(t, userResourceType.Annotations, 0, "ResourceType must not mutate the shared package-level userResourceType var")
 }
 
 // TestConnectorOpts_WillSyncResourceType_Role tests the gating logic that
 // decides whether the user builder should emit role grants: it should follow
 // cli.ConnectorOpts.WillSyncResourceType("role") exactly, since that's what
-// NewLambdaConnector feeds into Connector.syncRoles / userBuilder.syncRoles.
+// NewLambdaConnector feeds into Connector.skipRoleGrants / userBuilder.skipRoleGrants
+// (inverted: skipRoleGrants = !WillSyncResourceType(RoleResourceTypeID)).
 func TestConnectorOpts_WillSyncResourceType_Role(t *testing.T) {
 	tests := []struct {
 		name                string

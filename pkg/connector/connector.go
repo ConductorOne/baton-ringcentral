@@ -14,14 +14,16 @@ import (
 )
 
 type Connector struct {
-	client    *client.RingCentralClient
-	syncRoles bool
+	client *client.RingCentralClient
+	// skipRoleGrants is threaded into userBuilder; see the field comment on
+	// userBuilder.skipRoleGrants for the zero-value polarity rationale.
+	skipRoleGrants bool
 }
 
 // ResourceSyncers returns a ResourceSyncerV2 for each resource type that should be synced from the upstream service.
 func (d *Connector) ResourceSyncers(_ context.Context) []connectorbuilder.ResourceSyncerV2 {
 	return []connectorbuilder.ResourceSyncerV2{
-		newUserBuilder(d.client, d.syncRoles),
+		newUserBuilder(d.client, d.skipRoleGrants),
 		newRoleBuilder(d.client),
 	}
 }
@@ -71,15 +73,15 @@ func NewLambdaConnector(ctx context.Context, ac *cfg.Ringcentral, opts *cli.Conn
 	}
 
 	// opts is nil when NewLambdaConnector is invoked outside the SDK's normal
-	// CLI flow; default to true, matching WillSyncResourceType's own
-	// no-filter-set default of "sync everything".
-	syncRoles := true
+	// CLI flow; default to false ("don't skip" / role sync enabled), matching
+	// WillSyncResourceType's own no-filter-set default of "sync everything".
+	skipRoleGrants := false
 	if opts != nil {
-		syncRoles = opts.WillSyncResourceType(RoleResourceTypeID)
+		skipRoleGrants = !opts.WillSyncResourceType(RoleResourceTypeID)
 	}
 
 	if c, ok := cb.(*Connector); ok {
-		c.syncRoles = syncRoles
+		c.skipRoleGrants = skipRoleGrants
 	}
 
 	return cb, connectorOpts, nil

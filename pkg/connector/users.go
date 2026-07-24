@@ -5,24 +5,49 @@ import (
 
 	"github.com/conductorone/baton-ringcentral/pkg/client"
 	v2 "github.com/conductorone/baton-sdk/pb/c1/connector/v2"
+	"github.com/conductorone/baton-sdk/pkg/annotations"
 	"github.com/conductorone/baton-sdk/pkg/types/grant"
 	rs "github.com/conductorone/baton-sdk/pkg/types/resource"
+	"google.golang.org/protobuf/proto"
 )
 
 type userBuilder struct {
 	resourceType *v2.ResourceType
 	client       *client.RingCentralClient
-	// syncRoles reports whether the "role" resource type is included in this
-	// sync (see cli.ConnectorOpts.WillSyncResourceType). Grants emits role
-	// grants as a cross-type optimization (RingCentral's user API response
-	// includes each user's assigned roles), so this must be false when role
-	// sync is filtered out to avoid wasted work and dangling grants that
-	// reference a resource type that was never synced.
-	syncRoles bool
+	// skipRoleGrants reports whether the "role" resource type is excluded
+	// from this sync (see cli.ConnectorOpts.WillSyncResourceType). Grants
+	// emits role grants as a cross-type optimization (RingCentral's user API
+	// response includes each user's assigned roles), so ResourceType
+	// annotates the user resource type with SkipEntitlementsAndGrants when
+	// this is true, since nothing meaningful would be emitted.
+	//
+	// The zero value (false) means "don't skip" / role sync enabled, which
+	// is the permissive default: it matches WillSyncResourceType's own
+	// no-filter-means-sync-everything behavior, and matters because the
+	// "capabilities" CLI subcommand instantiates a bare zero-valued
+	// *Connector (see cmd/baton-ringcentral/main.go), bypassing
+	// NewLambdaConnector entirely.
+	skipRoleGrants bool
 }
 
 func (b *userBuilder) ResourceType(_ context.Context) *v2.ResourceType {
-	return userResourceType
+	rt, ok := proto.Clone(userResourceType).(*v2.ResourceType)
+	if !ok {
+		return userResourceType
+	}
+
+	annos := annotations.Annotations(rt.Annotations)
+	if b.skipRoleGrants {
+		annos.Append(&v2.SkipEntitlementsAndGrants{})
+	} else {
+		// Entitlements() always returns nil regardless of role-filter state,
+		// so SkipEntitlements is unconditional here; only the upgrade to
+		// SkipEntitlementsAndGrants above is conditional.
+		annos.Append(&v2.SkipEntitlements{})
+	}
+	rt.Annotations = annos
+
+	return rt
 }
 
 // List returns all the users from the database as resource objects.
@@ -73,10 +98,6 @@ func (b *userBuilder) Entitlements(_ context.Context, _ *v2.Resource, _ rs.SyncO
 // Grants always returns an empty slice for users since they don't have any entitlements.
 // In this case, Grants will create the Role Grants, since the Roles assigned are an internal data of each user that should be requested using the User ID.
 func (b *userBuilder) Grants(ctx context.Context, userResource *v2.Resource, _ rs.SyncOpAttrs) ([]*v2.Grant, *rs.SyncOpResults, error) {
-	if !b.syncRoles {
-		return nil, nil, nil
-	}
-
 	var roleGrants []*v2.Grant
 
 	userRoles, err := b.client.GetUserAssignedRoles(ctx, userResource)
@@ -134,10 +155,10 @@ func parseIntoUserResource(extension client.Extension) (*v2.Resource, error) {
 	return ret, nil
 }
 
-func newUserBuilder(c *client.RingCentralClient, syncRoles bool) *userBuilder {
+func newUserBuilder(c *client.RingCentralClient, skipRoleGrants bool) *userBuilder {
 	return &userBuilder{
-		resourceType: userResourceType,
-		client:       c,
-		syncRoles:    syncRoles,
+		resourceType:   userResourceType,
+		client:         c,
+		skipRoleGrants: skipRoleGrants,
 	}
 }
