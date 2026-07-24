@@ -47,7 +47,7 @@ func TestUserBuilder_List(t *testing.T) {
 		t.Fatal(message)
 	}
 
-	b := newUserBuilder(c)
+	b := newUserBuilder(c, true)
 
 	var users []*v2.Resource
 	paginationToken := pagination.Token{

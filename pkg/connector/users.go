@@ -12,6 +12,13 @@ import (
 type userBuilder struct {
 	resourceType *v2.ResourceType
 	client       *client.RingCentralClient
+	// syncRoles reports whether the "role" resource type is included in this
+	// sync (see cli.ConnectorOpts.WillSyncResourceType). Grants emits role
+	// grants as a cross-type optimization (RingCentral's user API response
+	// includes each user's assigned roles), so this must be false when role
+	// sync is filtered out to avoid wasted work and dangling grants that
+	// reference a resource type that was never synced.
+	syncRoles bool
 }
 
 func (b *userBuilder) ResourceType(_ context.Context) *v2.ResourceType {
@@ -66,6 +73,10 @@ func (b *userBuilder) Entitlements(_ context.Context, _ *v2.Resource, _ rs.SyncO
 // Grants always returns an empty slice for users since they don't have any entitlements.
 // In this case, Grants will create the Role Grants, since the Roles assigned are an internal data of each user that should be requested using the User ID.
 func (b *userBuilder) Grants(ctx context.Context, userResource *v2.Resource, _ rs.SyncOpAttrs) ([]*v2.Grant, *rs.SyncOpResults, error) {
+	if !b.syncRoles {
+		return nil, nil, nil
+	}
+
 	var roleGrants []*v2.Grant
 
 	userRoles, err := b.client.GetUserAssignedRoles(ctx, userResource)
@@ -123,9 +134,10 @@ func parseIntoUserResource(extension client.Extension) (*v2.Resource, error) {
 	return ret, nil
 }
 
-func newUserBuilder(c *client.RingCentralClient) *userBuilder {
+func newUserBuilder(c *client.RingCentralClient, syncRoles bool) *userBuilder {
 	return &userBuilder{
 		resourceType: userResourceType,
 		client:       c,
+		syncRoles:    syncRoles,
 	}
 }

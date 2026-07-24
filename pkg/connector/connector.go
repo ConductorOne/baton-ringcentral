@@ -14,13 +14,14 @@ import (
 )
 
 type Connector struct {
-	client *client.RingCentralClient
+	client    *client.RingCentralClient
+	syncRoles bool
 }
 
 // ResourceSyncers returns a ResourceSyncerV2 for each resource type that should be synced from the upstream service.
 func (d *Connector) ResourceSyncers(_ context.Context) []connectorbuilder.ResourceSyncerV2 {
 	return []connectorbuilder.ResourceSyncerV2{
-		newUserBuilder(d.client),
+		newUserBuilder(d.client, d.syncRoles),
 		newRoleBuilder(d.client),
 	}
 }
@@ -63,6 +64,23 @@ func NewConnector(ctx context.Context, ac *cfg.Ringcentral) (connectorbuilder.Co
 }
 
 // NewLambdaConnector returns a new instance of the connector for Lambda deployments.
-func NewLambdaConnector(ctx context.Context, ac *cfg.Ringcentral, _ *cli.ConnectorOpts) (connectorbuilder.ConnectorBuilderV2, []connectorbuilder.Opt, error) {
-	return NewConnector(ctx, ac)
+func NewLambdaConnector(ctx context.Context, ac *cfg.Ringcentral, opts *cli.ConnectorOpts) (connectorbuilder.ConnectorBuilderV2, []connectorbuilder.Opt, error) {
+	cb, connectorOpts, err := NewConnector(ctx, ac)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// opts is nil when NewLambdaConnector is invoked outside the SDK's normal
+	// CLI flow; default to true, matching WillSyncResourceType's own
+	// no-filter-set default of "sync everything".
+	syncRoles := true
+	if opts != nil {
+		syncRoles = opts.WillSyncResourceType(RoleResourceTypeID)
+	}
+
+	if c, ok := cb.(*Connector); ok {
+		c.syncRoles = syncRoles
+	}
+
+	return cb, connectorOpts, nil
 }
