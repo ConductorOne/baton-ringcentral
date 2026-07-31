@@ -99,8 +99,6 @@ func parseIntoUserResource(extension client.Extension) (*v2.Resource, error) {
 	}
 
 	userTraits := []rs.UserTraitOption{
-		rs.WithUserProfile(profile),
-		rs.WithStatus(userStatus),
 		rs.WithUserLogin(extension.ContactInfo.Email),
 		rs.WithEmail(extension.ContactInfo.Email, true),
 	}
@@ -115,6 +113,8 @@ func parseIntoUserResource(extension client.Extension) (*v2.Resource, error) {
 		userResourceType,
 		extension.ID,
 		userTraits,
+		rs.WithResourceProfile(profile),
+		rs.WithResourceStatus(v2.Status_ResourceStatus(userStatus), ""),
 	)
 	if err != nil {
 		return nil, err
