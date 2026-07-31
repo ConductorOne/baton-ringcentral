@@ -127,15 +127,14 @@ func parseIntoRoleResource(role client.Role) (*v2.Resource, error) {
 		"custom":       role.Custom,
 	}
 
-	roleTraits := []rs.RoleTraitOption{
-		rs.WithRoleProfile(profile),
-	}
+	roleTraits := []rs.RoleTraitOption{}
 
 	ret, err := rs.NewRoleResource(
 		role.DisplayName,
 		roleResourceType,
 		role.Id,
 		roleTraits,
+		rs.WithResourceProfile(profile),
 	)
 	if err != nil {
 		return nil, err
