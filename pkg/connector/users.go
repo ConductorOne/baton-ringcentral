@@ -5,8 +5,10 @@ import (
 
 	"github.com/conductorone/baton-ringcentral/pkg/client"
 	v2 "github.com/conductorone/baton-sdk/pb/c1/connector/v2"
+	"github.com/conductorone/baton-sdk/pkg/annotations"
 	"github.com/conductorone/baton-sdk/pkg/types/grant"
 	rs "github.com/conductorone/baton-sdk/pkg/types/resource"
+	"google.golang.org/protobuf/proto"
 )
 
 type userBuilder struct {
@@ -15,7 +17,7 @@ type userBuilder struct {
 }
 
 func (b *userBuilder) ResourceType(_ context.Context) *v2.ResourceType {
-	return userResourceType
+	return b.resourceType
 }
 
 // List returns all the users from the database as resource objects.
@@ -123,9 +125,21 @@ func parseIntoUserResource(extension client.Extension) (*v2.Resource, error) {
 	return ret, nil
 }
 
-func newUserBuilder(c *client.RingCentralClient) *userBuilder {
+// newUserBuilder returns the user syncer. Users have no entitlements of their
+// own, and their only grants are cross-type role grants, so when role is
+// excluded from the sync the grants pass is skipped too.
+func newUserBuilder(c *client.RingCentralClient, skipRoleResourceType bool) *userBuilder {
+	rt := proto.Clone(userResourceType).(*v2.ResourceType)
+	annos := annotations.Annotations(rt.GetAnnotations())
+	if skipRoleResourceType {
+		annos.Update(&v2.SkipEntitlementsAndGrants{})
+	} else {
+		annos.Update(&v2.SkipEntitlements{})
+	}
+	rt.Annotations = annos
+
 	return &userBuilder{
-		resourceType: userResourceType,
+		resourceType: rt,
 		client:       c,
 	}
 }

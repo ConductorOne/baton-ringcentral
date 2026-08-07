@@ -15,12 +15,16 @@ import (
 
 type Connector struct {
 	client *client.RingCentralClient
+	// skipRoleResourceType reports whether role is excluded from the sync
+	// filter. Named for the skip condition so the zero value is safe: main.go
+	// registers a zero-value Connector{} as the capabilities factory.
+	skipRoleResourceType bool
 }
 
 // ResourceSyncers returns a ResourceSyncerV2 for each resource type that should be synced from the upstream service.
 func (d *Connector) ResourceSyncers(_ context.Context) []connectorbuilder.ResourceSyncerV2 {
 	return []connectorbuilder.ResourceSyncerV2{
-		newUserBuilder(d.client),
+		newUserBuilder(d.client, d.skipRoleResourceType),
 		newRoleBuilder(d.client),
 	}
 }
@@ -46,7 +50,7 @@ func (d *Connector) Validate(_ context.Context) (annotations.Annotations, error)
 }
 
 // NewConnector returns a new instance of the connector.
-func NewConnector(ctx context.Context, ac *cfg.Ringcentral) (connectorbuilder.ConnectorBuilderV2, []connectorbuilder.Opt, error) {
+func NewConnector(ctx context.Context, ac *cfg.Ringcentral, skipRoleResourceType bool) (connectorbuilder.ConnectorBuilderV2, []connectorbuilder.Opt, error) {
 	c, err := client.New(
 		ctx,
 		client.WithClientID(ac.RingcentralClientId),
@@ -58,11 +62,13 @@ func NewConnector(ctx context.Context, ac *cfg.Ringcentral) (connectorbuilder.Co
 	}
 
 	return &Connector{
-		client: c,
+		client:               c,
+		skipRoleResourceType: skipRoleResourceType,
 	}, nil, nil
 }
 
 // NewLambdaConnector returns a new instance of the connector for Lambda deployments.
-func NewLambdaConnector(ctx context.Context, ac *cfg.Ringcentral, _ *cli.ConnectorOpts) (connectorbuilder.ConnectorBuilderV2, []connectorbuilder.Opt, error) {
-	return NewConnector(ctx, ac)
+func NewLambdaConnector(ctx context.Context, ac *cfg.Ringcentral, opts *cli.ConnectorOpts) (connectorbuilder.ConnectorBuilderV2, []connectorbuilder.Opt, error) {
+	// nil opts means no filter, so nothing is skipped.
+	return NewConnector(ctx, ac, opts != nil && !opts.WillSyncResourceType(RoleResourceTypeID))
 }
