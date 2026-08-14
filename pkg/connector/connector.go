@@ -70,5 +70,7 @@ func NewConnector(ctx context.Context, ac *cfg.Ringcentral, skipRoleResourceType
 // NewLambdaConnector returns a new instance of the connector for Lambda deployments.
 func NewLambdaConnector(ctx context.Context, ac *cfg.Ringcentral, opts *cli.ConnectorOpts) (connectorbuilder.ConnectorBuilderV2, []connectorbuilder.Opt, error) {
 	// nil opts means no filter, so nothing is skipped.
-	return NewConnector(ctx, ac, opts != nil && !opts.WillSyncResourceType(RoleResourceTypeID))
+	skipRoleResourceType := opts != nil && !opts.WillSyncResourceType(RoleResourceTypeID)
+
+	return NewConnector(ctx, ac, skipRoleResourceType)
 }
